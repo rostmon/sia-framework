@@ -45,3 +45,7 @@ class ModelAdapter(ABC):
         Returns:
             ModelResponse with normalized confidence and raw provider payload.
         """
+
+    @abstractmethod
+    async def agenerate(self, prompt: str, **kwargs) -> ModelResponse:
+        """Asynchronous version of generate()."""

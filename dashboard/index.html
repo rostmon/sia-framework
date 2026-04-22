@@ -353,8 +353,73 @@
 </main>
 
 <script>
-  const API_BASE = "http://127.0.0.1:8001";
-  const POLL_INTERVAL_MS = 5000;
+  let ws;
+
+  /* --- WebSocket Connection --- */
+  function connectWS() {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host || "127.0.0.1:8001";
+    ws = new WebSocket(`${protocol}//${host}/ws/metrics`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      updateDashboard(data);
+    };
+
+    ws.onclose = () => {
+      document.getElementById("last-updated").textContent = "⚠ Reconnecting...";
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+  }
+
+  function updateDashboard(data) {
+    const s = data.summary;
+
+    // KPIs
+    document.getElementById("kpi-total").textContent    = s.total_requests;
+    document.getElementById("kpi-rate").textContent     = s.compliance_rate + "%";
+    document.getElementById("kpi-blocked").textContent  = s.blocked;
+    document.getElementById("kpi-veto").textContent     = s.human_veto;
+    document.getElementById("kpi-rewritten").textContent = s.rewritten;
+    document.getElementById("kpi-pii").textContent      = s.pii_redactions;
+    document.getElementById("kpi-conf").textContent     = s.avg_confidence.toFixed(2);
+
+    // Anomaly banner
+    const banner = document.getElementById("anomaly-banner");
+    banner.style.display = s.anomaly_alert ? "block" : "none";
+
+    // Timeseries
+    const ts = data.timeseries;
+    if (ts.labels && ts.labels.length) {
+      tsChart.data.labels           = ts.labels;
+      tsChart.data.datasets[0].data = ts.passed;
+      tsChart.data.datasets[1].data = ts.blocked;
+      tsChart.data.datasets[2].data = ts.vetoed;
+      tsChart.data.datasets[3].data = ts.rewritten;
+      tsChart.update('none');
+    }
+
+    // Donut
+    const ad = data.action_distribution;
+    donutChart.data.datasets[0].data = [
+      ad.PASSED || 0, ad.BLOCKED || 0, ad.HUMAN_VETO || 0, ad.REWRITTEN || 0
+    ];
+    donutChart.update('none');
+
+    // Article table
+    renderArticleTable(data.article_triggers || {});
+
+    // Audit log
+    renderAuditLog(data.recent_events || []);
+
+    // Last updated
+    const now = new Date();
+    document.getElementById("last-updated").textContent = "Connected • " + now.toLocaleTimeString();
+  }
 
   /* ── Chart setup ──────────────────────────────────────── */
   const chartDefaults = {
@@ -467,64 +532,8 @@
     return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
 
-  /* ── Metrics update ─────────────────────────────────── */
-  async function fetchAndUpdate() {
-    try {
-      const res = await fetch(`${API_BASE}/metrics`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const s = data.summary;
-
-      // KPIs
-      document.getElementById("kpi-total").textContent    = s.total_requests;
-      document.getElementById("kpi-rate").textContent     = s.compliance_rate + "%";
-      document.getElementById("kpi-blocked").textContent  = s.blocked;
-      document.getElementById("kpi-veto").textContent     = s.human_veto;
-      document.getElementById("kpi-rewritten").textContent = s.rewritten;
-      document.getElementById("kpi-pii").textContent      = s.pii_redactions;
-      document.getElementById("kpi-conf").textContent     = s.avg_confidence.toFixed(2);
-
-      // Anomaly banner
-      const banner = document.getElementById("anomaly-banner");
-      banner.style.display = s.anomaly_alert ? "block" : "none";
-
-      // Timeseries
-      const ts = data.timeseries;
-      tsChart.data.labels           = ts.labels;
-      tsChart.data.datasets[0].data = ts.passed;
-      tsChart.data.datasets[1].data = ts.blocked;
-      tsChart.data.datasets[2].data = ts.vetoed;
-      tsChart.data.datasets[3].data = ts.rewritten;
-      tsChart.update();
-
-      // Donut
-      const ad = data.action_distribution;
-      donutChart.data.datasets[0].data = [
-        ad.PASSED || 0, ad.BLOCKED || 0, ad.HUMAN_VETO || 0, ad.REWRITTEN || 0
-      ];
-      donutChart.update();
-
-      // Article table
-      renderArticleTable(data.article_triggers || {});
-
-      // Audit log
-      renderAuditLog(data.recent_events || []);
-
-      // Last updated
-      const now = new Date();
-      document.getElementById("last-updated").textContent =
-        "Updated " + now.toLocaleTimeString();
-
-    } catch (err) {
-      document.getElementById("last-updated").textContent =
-        "⚠ Cannot reach API — is the monitoring server running?";
-      console.error("SIA Metrics API error:", err);
-    }
-  }
-
-  // Initial load + polling
-  fetchAndUpdate();
-  setInterval(fetchAndUpdate, POLL_INTERVAL_MS);
+  // Initial load
+  connectWS();
 </script>
 </body>
 </html>

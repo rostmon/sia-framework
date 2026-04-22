@@ -1,34 +1,19 @@
 """
-MockAdapter — deterministic adapter for PoC and unit testing.
-
-No API keys required. Pre-configure the response and confidence at
-instantiation time so test scenarios are fully reproducible.
+MockAdapter — Deterministic adapter for testing and CI/CD.
 """
+from typing import Dict, Optional
 from sia.adapters.base import ModelAdapter, ModelResponse
 
 
 class MockAdapter(ModelAdapter):
     """
-    Deterministic mock adapter for SIA testing pipelines.
-
-    Usage:
-        adapter = MockAdapter(
-            mock_content="Quantum computers use qubits.",
-            mock_confidence=0.95,
-            mock_rag_verified=True,
-        )
-        client = SIAClient(adapter=adapter, ...)
+    Returns deterministic responses for testing SIA governance gates.
     """
 
-    def __init__(
-        self,
-        mock_content: str = "Mock LLM response.",
-        mock_confidence: float = 0.9,
-        mock_rag_verified: bool = True,
-    ):
-        self._mock_content = mock_content
-        self._mock_confidence = mock_confidence
-        self._mock_rag_verified = mock_rag_verified
+    def __init__(self, mock_content: str = "Mock output.", mock_confidence: float = 0.95, mock_rag_verified: bool = False):
+        self.mock_content = mock_content
+        self.mock_confidence = mock_confidence
+        self.mock_rag_verified = mock_rag_verified
 
     @property
     def provider_name(self) -> str:
@@ -36,9 +21,14 @@ class MockAdapter(ModelAdapter):
 
     def generate(self, prompt: str, **kwargs) -> ModelResponse:
         return ModelResponse(
-            content=self._mock_content,
-            confidence=self._mock_confidence,
-            rag_verified=self._mock_rag_verified,
+            content=self.mock_content,
+            confidence=self.mock_confidence,
+            rag_verified=self.mock_rag_verified,
             provider=self.provider_name,
-            raw={"prompt": prompt, "mock": True},
+            raw={"status": "mocked", "reasoning": "Mocked reasoning for traceability."}
         )
+
+    async def agenerate(self, prompt: str, **kwargs) -> ModelResponse:
+        import asyncio
+        await asyncio.sleep(0.01)  # Simulate network latency
+        return self.generate(prompt, **kwargs)
