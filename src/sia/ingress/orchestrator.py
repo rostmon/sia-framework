@@ -10,12 +10,15 @@ class ContextualIngressOrchestrator:
         self.rule_engine = rule_engine
 
     def process_prompt(self, prompt: str) -> Dict[str, Any]:
-        # We classify intent first (e.g., hate_speech)
         intent = self.classifier.classify(prompt)
         
-        # We also manually flag 'hate_speech' if the word is in the prompt for the PoC
+        # Manually flag specific intents for PoC
         if "hate_speech" in prompt:
              intent = "hate_speech"
+        elif "social scoring" in prompt:
+             intent = "social_scoring"
+        elif "IGNORE ALL PREVIOUS INSTRUCTIONS" in prompt:
+             intent = "prompt_injection"
              
         contains_pii = self.sanitizer.contains_pii(prompt)
         sanitized_prompt = self.sanitizer.sanitize(prompt)

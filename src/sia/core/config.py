@@ -13,6 +13,8 @@ class Rule(BaseModel):
     on_trigger: Optional[str] = None
     min_confidence: Optional[float] = None
     rewrite_template: Optional[str] = None
+    practices: Optional[List[str]] = None
+    healthcare_disclaimer: Optional[str] = None
 
 class ParagraphConfig(BaseModel):
     description: str

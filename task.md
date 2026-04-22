@@ -71,3 +71,10 @@
 - `[x]` Expand `tests/test_poc.py` to run comprehensive 6-scenario integration suite.
 - `[x]` Run test suite to populate ledger.
 - `[x]` Generate comprehensive `ANNEX_IV_EVIDENCE.md`.
+
+## Phase 11: Comprehensive Article 5, 13.2, and 15.4 Integration
+- `[ ]` Inject Article 5, 13.2, and 15.4 atomic rules into `eu_ai_act_full.yaml`.
+- `[ ]` Update `orchestrator.py` and `engine.py` to enforce new logic gates.
+- `[ ]` Expand `test_poc.py` with adversarial/prohibited scenarios.
+- `[ ]` Update `reporter.py` to track new blocks.
+- `[ ]` Run validation and commit to repository.

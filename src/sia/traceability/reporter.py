@@ -17,6 +17,9 @@ class ComplianceReporter:
         article_10_bias_blocks = 0
         article_14_triggers = 0
         article_15_blocks = 0
+        article_5_blocks = 0
+        article_15_4_blocks = 0
+        article_13_disclaimers = 0
         total_confidence = 0.0
         hashes = []
 
@@ -32,13 +35,20 @@ class ComplianceReporter:
                         pii_sanitized_count += 1
                     if "[SIA BLOCK]" in record.get("output", ""):
                         article_15_blocks += 1
+                    if "Disclaimer:" in record.get("output", ""):
+                        article_13_disclaimers += 1
                         
                 elif record["type"] == "intervention":
                     total_interventions += 1
-                    if record.get("trigger_paragraph") == "article_14_4":
+                    tp = record.get("trigger_paragraph")
+                    if tp == "article_14_4" and record.get("action_taken") == "HTTP_202_ACCEPTED_HUMAN_VETO":
                         article_14_triggers += 1
-                    elif record.get("trigger_paragraph") == "article_10_2_f":
+                    elif tp == "article_10_2_f":
                         article_10_bias_blocks += 1
+                    elif tp == "article_5_1":
+                        article_5_blocks += 1
+                    elif tp == "article_15_4":
+                        article_15_4_blocks += 1
 
         avg_confidence = total_confidence / total_inferences if total_inferences > 0 else 0.0
 
@@ -52,27 +62,36 @@ This report provides objective runtime evidence of compliance with the EU AI Act
 - **Total Active Interventions:** {total_interventions}
 - **Average Compliance Confidence Score:** {avg_confidence:.2f}
 
-## 2. Article 10 (Data Governance) Evidence
+## 2. Article 5 (Prohibited Practices) Evidence
+*Requirement: Ban on unacceptable risk AI practices.*
+- **Prohibited Practices Blocked (`BLOCK_PROHIBITED_PRACTICES`):** {article_5_blocks} instances where requests for social scoring or biometric surveillance were intercepted and dropped.
+
+## 3. Article 10 (Data Governance) Evidence
 *Requirement: Data sets must be free of errors, personal data safeguarded, and biases examined.*
 - **PII Sanitization Events Executed (`STRIP_PII`):** {pii_sanitized_count} instances where sensitive personal data was automatically redacted.
 - **Prohibited Bias Blocks (`BLOCK_PROHIBITED_DOMAINS`):** {article_10_bias_blocks} instances where requests mapping to hate speech/discrimination were rejected.
 
-## 3. Article 14 (Human Oversight) Evidence
+## 4. Article 13 (Transparency) Evidence
+*Requirement: Users must be informed of AI generation and system limitations.*
+- **Contextual Disclaimers Appended (`APPEND_DISCLAIMER`):** {article_13_disclaimers} instances where Annex III specific disclaimers (e.g. Healthcare) were dynamically added to the AI output.
+
+## 5. Article 14 (Human Oversight) Evidence
 *Requirement: High-risk Annex III tasks must allow for human intervention.*
 - **Human Veto Gates Triggered (`HTTP 202`):** {article_14_triggers} instances where the system detected high-risk intent (e.g., employment, healthcare) and paused execution for mandatory human signature.
 
-## 4. Article 15 (Accuracy and Robustness) Evidence
-*Requirement: System must be resilient against hallucinations and errors.*
+## 6. Article 15 (Accuracy, Robustness, and Cybersecurity) Evidence
+*Requirement: System must be resilient against hallucinations and adversarial attacks.*
 - **Hallucinations Blocked (`BLOCK_AND_REWRITE`):** {article_15_blocks} instances where the Truth Razor detected low-confidence/unverified facts and intercepted the output.
+- **Prompt Injections Blocked (`BLOCK_PROMPT_INJECTION`):** {article_15_4_blocks} instances where adversarial jailbreaks were detected and blocked at ingress.
 
-## 5. Article 12 (Traceability) Cryptographic Ledger
+## 7. Article 12 (Traceability) Cryptographic Ledger
 *Requirement: Automatic recording of events.*
 Below is a sampled audit trail of the most recent cryptographic signatures anchoring these events to the immutable ledger:
 
 | Timestamp | SHA-256 Signature Hash |
 | :--- | :--- |
 """
-        for ts, hsh in hashes[-5:]:  # Show last 5
+        for ts, hsh in hashes[-7:]:  # Show last 7
             md_content += f"| {ts} | `{hsh}` |\n"
 
         with open(output_path, "w", encoding="utf-8") as f:
