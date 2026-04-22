@@ -28,6 +28,13 @@
 - `[x]` Implement FastAPI Sidecar.
 
 ## Phase 4: Testing & Proof of Concept (PoC)
-- `[ ]` Setup Mock LLM.
-- `[ ]` Create and run Adversarial Tests.
-- `[ ]` End-to-End run verification.
+- `[x]` Setup Mock LLM.
+- `[x]` Create and run Adversarial Tests.
+- `[x]` End-to-End run verification.
+
+## Phase 5: EU AI Act Governance-as-Code Translation
+- `[ ]` Create comprehensive `configs/eu_ai_act_full.yaml` with per-environment granularity and Annex III categorization.
+- `[ ]` Expand `src/sia/core/config.py` Pydantic models for nested Article/Annex tracking.
+- `[ ]` Upgrade `src/sia/core/engine.py` to evaluate new rules.
+- `[ ]` Update Ingress/Egress layers and FastAPI route to support HTTP 202 Accepted for Human Signature (HITL).
+- `[ ]` Update `test_poc.py` to demonstrate the new EU AI Act schema.
