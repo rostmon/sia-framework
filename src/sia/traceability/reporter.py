@@ -3,10 +3,10 @@ import os
 from datetime import datetime
 
 class ComplianceReporter:
-    def __init__(self, ledger_path: str = "audit_ledger.jsonl"):
+    def __init__(self, ledger_path: str = "logs/audit_ledger.jsonl"):
         self.ledger_path = ledger_path
 
-    def generate_report(self, output_path: str = "ANNEX_IV_EVIDENCE.md"):
+    def generate_report(self, output_path: str = "reports/ANNEX_IV_EVIDENCE.md"):
         if not os.path.exists(self.ledger_path):
             print(f"Ledger file not found: {self.ledger_path}")
             return

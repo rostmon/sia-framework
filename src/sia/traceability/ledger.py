@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 class AuditLedger:
-    def __init__(self, db_path: str = "audit_ledger.jsonl"):
+    def __init__(self, db_path: str = "logs/audit_ledger.jsonl"):
         self.db_path = db_path
 
     def _hash_payload(self, payload: Dict[str, Any]) -> str:
