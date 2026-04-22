@@ -10,6 +10,7 @@ class Rule(BaseModel):
 
     logic: str
     category: str = "runtime_gate"  # runtime_gate | deployment_assertion | governance_doc
+    risk_weight: float = 10.0      # Default weight for scoring
     # Blocking / filtering
     on_fail: Optional[str] = None
     on_trigger: Optional[str] = None

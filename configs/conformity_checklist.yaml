@@ -1,0 +1,39 @@
+# EU AI Act Article 43/Annex VI Conformity Assessment Checklist
+# This checklist tracks 'static' compliance requirements for high-risk systems.
+
+metadata:
+  title: "Official Conformity Assessment Checklist"
+  version: "1.0.0"
+  framework_version: "SIA v0.1.0"
+
+requirements:
+  article_9:
+    title: "Risk Management System"
+    description: "Establish, implement, document and maintain a risk management system."
+    checks:
+      risk_identification: "Continuous identification and analysis of known and foreseeable risks."
+      mitigation_measures: "Adoption of suitable risk management measures."
+      testing_procedures: "Testing against defined metrics and probabilistic thresholds."
+
+  article_10:
+    title: "Data and Data Governance"
+    description: "Training, validation and testing data sets shall be subject to appropriate data governance."
+    checks:
+      design_choices: "Documented design choices and data collection processes."
+      bias_examination: "Examination for possible biases that may affect health/safety."
+      data_gap_analysis: "Analysis of data gaps and shortcomings."
+
+  article_11:
+    title: "Technical Documentation"
+    description: "Documentation must demonstrate that the system complies with the requirements."
+    checks:
+      system_description: "General description of the AI system and its intended purpose."
+      architecture_specs: "Detailed description of the components and development process."
+      monitoring_plan: "Plan for post-market monitoring and data logging."
+
+  article_12:
+    title: "Record-keeping (Traceability)"
+    description: "Capability of enabling the automatic recording of events (logs)."
+    checks:
+      automated_logging: "Logging of the period of each use of the system."
+      event_traceability: "Identification of the data causing the system to reach its decision."

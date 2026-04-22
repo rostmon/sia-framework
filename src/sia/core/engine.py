@@ -78,18 +78,14 @@ class RuleEvaluationEngine:
     # ──────────────────────────────────────────────────────────────────────────
     def evaluate_ingress(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluates ingress-time gates in priority order:
-        1. Article 15.4 (Prompt Injection / Cybersecurity)
-        2. Article 5   (Prohibited Practices)
-        3. Article 10.2f (Bias/Hate Speech)
-        4. Article 10.5 (Special Category Data)
-        5. Article 14.4 (Human-in-the-Loop / Annex III)
-        6. Article 9.2  (Risk Classification)
+        Evaluates ingress-time gates and returns a risk score (0-100).
         """
         if not self.is_environment_active():
             return {"allowed": True, "requires_human_review": False,
-                    "trigger_paragraph": None, "trigger_reason": None}
+                    "trigger_paragraph": None, "trigger_reason": None,
+                    "risk_score": 0.0}
 
+        risk_score = 0.0
         intent = context.get("intent", "low_risk")
         prompt_text = context.get("prompt_text", "").lower()
         prompt_upper = context.get("prompt_text", "")
@@ -166,6 +162,7 @@ class RuleEvaluationEngine:
             "trigger_paragraph": trigger_paragraph,
             "http_status": 202 if requires_human_review else None,
             "trigger_reason": "Annex III High-Risk Category Detected" if requires_human_review else None,
+            "risk_score": 100.0 if requires_human_review else 0.0 # High risk if HITL triggered
         }
 
     # ──────────────────────────────────────────────────────────────────────────

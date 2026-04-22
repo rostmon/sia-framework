@@ -102,8 +102,27 @@ async def get_reviews():
     # We populate the queue from the ledger's HUMAN_VETO entries
     metrics = collector.compute()
     recent = metrics.get("recent_events", [])
-    pending = [e for e in recent if e["action"] == "HUMAN_VETO"]
+    pending = [e for e in recent if "VETO" in e["action"]]
     return JSONResponse(content=pending)
+
+from sia.regulatory.conformity import ConformityAssessor
+
+# Initialize conformity assessor
+assessor = ConformityAssessor(
+    config_path=_ROOT_DIR / "configs" / "conformity_checklist.yaml",
+    state_path=_ROOT_DIR / "logs" / "conformity_state.json"
+)
+
+@app.get("/conformity")
+async def get_conformity_status():
+    """Returns the current progress of the conformity assessment."""
+    return JSONResponse(content=assessor.get_progress())
+
+@app.post("/conformity/check")
+async def update_conformity_check(req_id: str, check_id: str, completed: bool):
+    """Updates the status of a specific conformity check."""
+    assessor.update_check(req_id, check_id, completed)
+    return {"status": "success", "progress": assessor.get_progress()["overall_percent"]}
 
 @app.post("/review/{trace_hash}")
 async def submit_review(trace_hash: str, decision: str):
@@ -113,6 +132,17 @@ async def submit_review(trace_hash: str, decision: str):
     """
     # Logic to update the ledger/audit trail would go here
     return {"status": "success", "decision": decision, "trace_hash": trace_hash}
+
+from sia.regulatory.certificates import ConformityCertificate
+
+@app.get("/report/conformity-certificate", response_class=HTMLResponse)
+async def generate_conformity_certificate():
+    """Generates a signed conformity certificate."""
+    progress = assessor.get_progress()
+    cert_gen = ConformityCertificate(project_name="SIA Framework Demo")
+    cert_data = cert_gen.generate(progress)
+    report_md = cert_gen.to_markdown(cert_data)
+    return HTMLResponse(content=f"<pre>{report_md}</pre>", status_code=200)
 
 @app.get("/report/annex-iv", response_class=HTMLResponse)
 async def generate_annex_iv_report():

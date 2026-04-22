@@ -256,6 +256,11 @@
     </div>
   </div>
   <div class="header-right">
+    <a href="/report/conformity-certificate" target="_blank" style="text-decoration: none;">
+      <div class="status-badge" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--green); cursor: pointer;">
+        📜 Get Conformity Certificate
+      </div>
+    </a>
     <a href="/report/annex-iv" target="_blank" style="text-decoration: none;">
       <div class="status-badge" style="background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); color: var(--accent); cursor: pointer;">
         📄 Download Annex IV Report
@@ -354,6 +359,14 @@
         <div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>
       </div>
     </div>
+    <!-- Conformity Checklist -->
+    <div class="chart-card">
+      <div class="chart-title">Regulatory Conformity Checklist</div>
+      <div class="chart-sub">Article 43 / Annex VI Assessment Progress</div>
+      <div id="conformity-wrap">
+        <div class="empty-state"><div class="icon">📜</div>Loading checklist...</div>
+      </div>
+    </div>
   </div>
 
   <div style="margin-top: 24px;">
@@ -435,6 +448,9 @@
     // Review queue
     fetchReviews();
 
+    // Conformity
+    fetchConformity();
+
     // Last updated
     const now = new Date();
     document.getElementById("last-updated").textContent = "Connected • " + now.toLocaleTimeString();
@@ -457,6 +473,45 @@
     } catch (err) {
       console.error("Error submitting review:", err);
     }
+  }
+
+  async function fetchConformity() {
+    try {
+      const response = await fetch("/conformity");
+      const data = await response.json();
+      renderConformity(data);
+    } catch (err) {
+      console.error("Error fetching conformity:", err);
+    }
+  }
+
+  async function toggleCheck(reqId, checkId, completed) {
+    try {
+      await fetch(`/conformity/check?req_id=${reqId}&check_id=${checkId}&completed=${completed}`, { method: "POST" });
+      fetchConformity();
+    } catch (err) {
+      console.error("Error updating check:", err);
+    }
+  }
+
+  function renderConformity(data) {
+    const wrap = document.getElementById("conformity-wrap");
+    let html = `<div style="margin-bottom:12px; font-weight:600; color:var(--green);">Overall Progress: ${data.overall_percent}%</div>`;
+    html += `<div class="audit-log">`;
+    for (const [id, req] of Object.entries(data.requirements)) {
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:12px; font-weight:600; margin-bottom:4px;">${req.title} (${req.percent}%)</div>
+        <div style="display:flex; flex-direction:column; gap:4px;">`;
+      for (const [cid, desc] of Object.entries(req.checks)) {
+        const checked = req.status[cid] ? "checked" : "";
+        html += `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--muted); cursor:pointer;">
+          <input type="checkbox" ${checked} onchange="toggleCheck('${id}','${cid}', this.checked)"> ${desc}
+        </label>`;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+    wrap.innerHTML = html;
   }
 
   function renderReviewQueue(reviews) {
