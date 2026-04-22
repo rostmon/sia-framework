@@ -47,7 +47,14 @@
 - `[ ]` Update `TRACEABILITY.md` matrix.
 
 ## Phase 7: Compliance Evidence Pipeline
-- `[ ]` Implement `src/sia/traceability/reporter.py` to parse `audit_ledger.jsonl`.
-- `[ ]` Implement aggregation logic for Articles 10, 14, and 15 metrics.
-- `[ ]` Implement Markdown generation for `ANNEX_IV_EVIDENCE.md`.
-- `[ ]` Run pipeline and verify output artifact.
+- `[x]` Implement `src/sia/traceability/reporter.py` to parse `audit_ledger.jsonl`.
+- `[x]` Implement aggregation logic for Articles 10, 14, and 15 metrics.
+- `[x]` Implement Markdown generation for `ANNEX_IV_EVIDENCE.md`.
+- `[x]` Run pipeline and verify output artifact.
+
+## Phase 8: Compliance Gap Analysis & Validation Reporting
+- `[ ]` Generate `GAP_ANALYSIS.md` mapping Annex IV to current artifacts.
+- `[ ]` Draft `SYSTEM_DESCRIPTION.md` to close Intended Use and Architecture gaps.
+- `[ ]` Draft `RISK_MANAGEMENT_SUMMARY.md` to close Article 9 gaps.
+- `[ ]` Compile Master `SIA_VALIDATION_REPORT.md`.
+- `[ ]` Commit all documentation to repository.
