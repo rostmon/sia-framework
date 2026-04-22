@@ -1,6 +1,6 @@
 import yaml
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Any
+from pydantic import BaseModel
+from typing import Optional, Dict, List
 from pathlib import Path
 
 class Rule(BaseModel):
@@ -14,9 +14,12 @@ class Rule(BaseModel):
     min_confidence: Optional[float] = None
     rewrite_template: Optional[str] = None
 
-class ArticleConfig(BaseModel):
+class ParagraphConfig(BaseModel):
     description: str
     rules: Dict[str, Rule]
+
+class ArticleConfig(BaseModel):
+    paragraphs: Dict[str, ParagraphConfig]
 
 class Environments(BaseModel):
     active: List[str]
@@ -29,5 +32,4 @@ class EUAIActConfig(BaseModel):
 def load_logic_gates(file_path: str | Path) -> EUAIActConfig:
     with open(file_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
-    
     return EUAIActConfig(**data)

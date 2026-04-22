@@ -38,3 +38,10 @@
 - `[x]` Upgrade `src/sia/core/engine.py` to evaluate new rules.
 - `[x]` Update Ingress/Egress layers and FastAPI route to support HTTP 202 Accepted for Human Signature (HITL).
 - `[x]` Update `test_poc.py` to demonstrate the new EU AI Act schema.
+
+## Phase 6: EU AI Act Paragraph-Level Breakdown
+- `[ ]` Update `configs/eu_ai_act_full.yaml` to include nested paragraphs.
+- `[ ]` Update `src/sia/core/config.py` to handle the `Article -> Paragraph -> Rule` hierarchy.
+- `[ ]` Update `src/sia/core/engine.py` to evaluate and return specific paragraph references.
+- `[ ]` Update `src/sia/main.py` and `tests/test_poc.py` to log specific paragraph triggers.
+- `[ ]` Update `TRACEABILITY.md` matrix.

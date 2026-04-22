@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel
+from typing import Optional
 from sia.core.config import load_logic_gates
 from sia.core.engine import RuleEvaluationEngine
 from sia.ingress.orchestrator import ContextualIngressOrchestrator
@@ -26,34 +27,29 @@ class ChatResponse(BaseModel):
 
 @app.post("/v1/chat/completions")
 async def chat_completion(request: ChatRequest, response: Response):
-    # 1. Ingress - Contextual Firewall
     ingress_result = ingress.process_prompt(request.prompt)
     if not ingress_result["allowed"]:
         raise HTTPException(status_code=403, detail=ingress_result["reason"])
 
-    # Article 14: Human-in-the-loop (HITL) Gate
     if ingress_result.get("requires_human_review"):
         response.status_code = 202
+        trigger = ingress_result.get("trigger_paragraph", "unknown_paragraph")
         return {
-            "status": "HTTP 202 Accepted - Human Review Required",
+            "status": f"HTTP 202 Accepted - Human Review Required by {trigger.replace('_', ' ').title()}",
             "message": "This request falls under Annex III High-Risk categorization and requires a mandatory human signature before proceeding.",
             "review_url": "https://sia.internal/review/queue/12345"
         }
 
     sanitized_prompt = ingress_result["sanitized_prompt"]
 
-    # 2. Mock LLM Call
     llm_output_text = "Here is the response. SIA uses Governance-as-Code."
     llm_reasoning = "<thought> I should mention Governance-as-Code. </thought>"
 
-    # 3. Egress - Deterministic Validator
-    # We pass the engine to validate Article 13 & 15
     is_compliant, verified_output, watermark = rule_engine.evaluate_egress(llm_output_text, confidence=0.9)
     
     if watermark:
         verified_output += f"\n\n[Transparency]: {watermark}"
 
-    # 4. Traceability - Forensic Ledger
     reasoning_path = extractor.extract({"content": llm_reasoning})
     compliance_score = 0.9 if is_compliant else 0.0
     

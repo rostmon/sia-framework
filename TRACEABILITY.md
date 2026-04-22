@@ -1,23 +1,25 @@
-# EU AI Act Governance Traceability Matrix
+# EU AI Act Governance Traceability Matrix (Paragraph Level)
 
 This document establishes human-readable traceability between the legal text of the **EU AI Act** and the deterministic technical controls implemented in the `configs/eu_ai_act_full.yaml` Governance-as-Code (GaC) configuration.
 
 ## Traceability Table
 
-| EU AI Act Article | Legal Requirement Summary | YAML Configuration Node | Technical Intervention |
+| EU AI Act Paragraph | Legal Requirement Summary | YAML Configuration Node | Technical Intervention |
 | :--- | :--- | :--- | :--- |
-| **Article 10** | Data Governance: Training, validation, and testing data must be relevant, representative, and error-free. | `articles.article_10_data_governance.rules.pii_sanitization` | **Ingress**: Uses regex/NLP to dynamically strip PII before it reaches the AI engine to prevent unauthorized data processing. |
-| **Article 10** | Data Governance: Risk of biases must be addressed. | `articles.article_10_data_governance.rules.bias_check` | **Ingress**: Blocks requests containing domains known for discriminatory or prohibited inference. |
-| **Article 12** | Record-Keeping: Automatic recording of events over the system's lifetime. | `articles.article_12_record_keeping.rules.traceability` | **Traceability**: Generates a SHA-256 hash anchoring the prompt, reasoning path, output, and score to an immutable ledger (`audit_ledger.jsonl`). |
-| **Article 13** | Transparency: Users must be informed they are interacting with an AI system. | `articles.article_13_transparency.rules.watermarking` | **Egress**: Appends a verifiable text watermark (`APPEND_WATERMARK`) to the final output string. |
-| **Article 14** | Human Oversight: High-risk systems must allow for human intervention and oversight. | `articles.article_14_human_oversight.rules.hitl_gate` | **Ingress**: Detects keywords mapping to **Annex III** categories (e.g., healthcare, employment). Pauses execution and returns `HTTP 202 Accepted` for human signature. |
-| **Article 15** | Accuracy & Robustness: Systems must achieve an appropriate level of accuracy and resilience. | `articles.article_15_accuracy_robustness.rules.truth_razor` | **Egress**: The Truth Razor verifies facts against Authorized Truth-Centers. If confidence is `< 0.85`, it executes `BLOCK_AND_REWRITE`. |
+| **Article 10.3** | Data sets must be relevant, representative, and free of errors. | `articles.article_10_data_governance.paragraphs.article_10_3.rules.pii_sanitization` | **Ingress**: Uses regex/NLP to dynamically strip PII (`STRIP_PII`) before it reaches the AI engine. |
+| **Article 10.2(f)** | Examination in view of possible biases. | `articles.article_10_data_governance.paragraphs.article_10_2_f.rules.bias_check` | **Ingress**: Blocks requests containing domains known for discriminatory inference (`BLOCK_PROHIBITED_DOMAINS`). |
+| **Article 12.1** | Automatic recording of events over the system's lifetime. | `articles.article_12_record_keeping.paragraphs.article_12_1.rules.traceability` | **Traceability**: Generates a SHA-256 hash anchoring the prompt to an immutable ledger (`REQUIRE_TRACEABILITY_HASH`). |
+| **Article 12.2** | Record-keeping retention standards. | `articles.article_12_record_keeping.paragraphs.article_12_2.rules.retention` | **Traceability**: Enforces a `10_YEARS` retention policy. |
+| **Article 13.1** | Users must be informed they are interacting with an AI system. | `articles.article_13_transparency.paragraphs.article_13_1.rules.watermarking` | **Egress**: Appends a verifiable text watermark (`APPEND_WATERMARK`) to the output. |
+| **Article 14.4** | Human override and intervention for high-risk systems. | `articles.article_14_human_oversight.paragraphs.article_14_4.rules.hitl_gate` | **Ingress**: Detects keywords mapping to **Annex III** categories. Returns `HTTP 202 Accepted` for human signature (`REQUIRE_HUMAN_VETO`). |
+| **Article 15.1** | Appropriate level of accuracy. | `articles.article_15_accuracy_robustness.paragraphs.article_15_1.rules.min_accuracy` | **Egress**: Enforces a `REQUIRE_MINIMUM_CONFIDENCE` threshold (0.85). |
+| **Article 15.3** | Resilience against errors and faults (Hallucination filtering). | `articles.article_15_accuracy_robustness.paragraphs.article_15_3.rules.truth_razor` | **Egress**: Verifies facts against Truth-Centers (`REQUIRE_RAG_GROUNDING`). Executes `BLOCK_AND_REWRITE` on fail. |
 
 ---
 
 ## Architectural Visualization
 
-The following diagram illustrates how the Sovereign Stack processes a request while explicitly enforcing the Articles of the EU AI Act based on the YAML configuration.
+The following diagram illustrates how the Sovereign Stack processes a request while explicitly enforcing the Paragraphs of the EU AI Act based on the YAML configuration.
 
 ```mermaid
 flowchart TD
@@ -25,38 +27,30 @@ flowchart TD
 
     subgraph "Contextual Ingress Orchestrator (Pre-Processing)"
         Ingress(Receive Prompt)
-        Ingress --> A10{Article 10: Data Gov}
-        A10 -->|Contains PII| StripPII(Sanitize Data: STRIP_PII)
-        A10 -->|Clean| A14{Article 14: Human Oversight}
-        StripPII --> A14
+        Ingress --> A10_3{Article 10.3: Data Errors}
+        A10_3 -->|Contains PII| StripPII(Sanitize Data: STRIP_PII)
+        A10_3 -->|Clean| A14_4{Article 14.4: Human Override}
+        StripPII --> A14_4
         
-        A14 -->|Matches Annex III| Veto(Return HTTP 202: Require Human Veto)
-        A14 -->|Low Risk| LLM
+        A14_4 -->|Matches Annex III| Veto(Return HTTP 202: Require Human Veto)
+        A14_4 -->|Low Risk| LLM
     end
 
     subgraph "Forensic Traceability Engine (Sidecar)"
-        LLM[Black Box LLM Execution] --> A12(Article 12: Record-Keeping)
-        A12 --> Extractor(Extract Chain of Thought)
+        LLM[Black Box LLM Execution] --> A12_1(Article 12.1: Record-Keeping)
+        A12_1 --> Extractor(Extract Chain of Thought)
         Extractor --> Ledger[(Immutable Ledger: SHA-256 Hash)]
     end
 
     subgraph "Deterministic Egress Validator (Post-Processing)"
-        LLM --> A15{Article 15: Accuracy}
-        A15 -->|Confidence < 0.85| Block(BLOCK_AND_REWRITE)
-        A15 -->|Confidence >= 0.85| A13(Article 13: Transparency)
+        LLM --> A15_3{Article 15.3: Resilience}
+        A15_3 -->|Confidence < 0.85| Block(BLOCK_AND_REWRITE)
+        A15_3 -->|Confidence >= 0.85| A13_1(Article 13.1: Transparency)
         
-        A13 --> Watermark(Append 'Generated by AI' Watermark)
+        A13_1 --> Watermark(Append 'Generated by AI' Watermark)
         Watermark --> Signer(Append SIA Integrity Signature)
     end
 
     Signer --> Output([Final Verified Output])
     Block --> Output
 ```
-
-## Annex III High-Risk Mapping
-
-The YAML dynamically maps intent categories to **Annex III** of the EU AI Act to trigger Article 14 rules:
-
-- **Employment**: Triggers on `resume scoring`, `hiring`, `interview analysis`.
-- **Healthcare**: Triggers on `clinical triage`, `medical diagnosis`, `treatment recommendation`.
-- **Biometrics**: Triggers on `facial recognition`, `emotion inference`.

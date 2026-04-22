@@ -18,7 +18,6 @@ class ContextualIngressOrchestrator:
         contains_pii = self.sanitizer.contains_pii(prompt)
         sanitized_prompt = self.sanitizer.sanitize(prompt)
 
-        # Enforce EU AI Act Ingress Rules
         context = {
             "intent": intent,
             "prompt_text": prompt,
@@ -30,6 +29,7 @@ class ContextualIngressOrchestrator:
         return {
             "allowed": eval_result["allowed"],
             "requires_human_review": eval_result["requires_human_review"],
+            "trigger_paragraph": eval_result.get("trigger_paragraph"),
             "intent": intent,
             "sanitized_prompt": sanitized_prompt,
             "original_prompt": prompt,
