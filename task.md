@@ -45,3 +45,9 @@
 - `[ ]` Update `src/sia/core/engine.py` to evaluate and return specific paragraph references.
 - `[ ]` Update `src/sia/main.py` and `tests/test_poc.py` to log specific paragraph triggers.
 - `[ ]` Update `TRACEABILITY.md` matrix.
+
+## Phase 7: Compliance Evidence Pipeline
+- `[ ]` Implement `src/sia/traceability/reporter.py` to parse `audit_ledger.jsonl`.
+- `[ ]` Implement aggregation logic for Articles 10, 14, and 15 metrics.
+- `[ ]` Implement Markdown generation for `ANNEX_IV_EVIDENCE.md`.
+- `[ ]` Run pipeline and verify output artifact.
