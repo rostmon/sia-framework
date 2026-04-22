@@ -1,0 +1,15 @@
+# configs/sia_logic_gate.yaml
+article_15_accuracy:
+  logic: "RAG_VERIFY(output.facts) == true"
+  on_fail: "BLOCK_AND_REWRITE"
+  description: "Ensures that all facts present in the output are grounded in the verifiable RAG context."
+
+article_06_high_risk:
+  context_match: "TASK(clinical_triage) OR TASK(resume_scoring)"
+  requirement: "MANDATORY_HUMAN_SIGNATURE"
+  description: "Flags high-risk tasks that require explicit human oversight."
+
+pii_sanitization:
+  logic: "CONTAINS_PII(input.text) == false"
+  on_fail: "STRIP_PII"
+  description: "Automatically removes Personally Identifiable Information from the input."
