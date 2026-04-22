@@ -9,9 +9,9 @@
 
 ## Phase 2: The Sovereign Stack - Core Modules
 ### Module 1: Contextual Ingress Orchestrator
-- `[ ]` Implement Intent Classification stub.
-- `[ ]` Implement Data Sanitization using `Presidio` (or similar).
-- `[ ]` Implement Pre-emptive Veto logic.
+- `[x]` Implement Intent Classification stub.
+- `[x]` Implement Data Sanitization using `Presidio` (or similar).
+- `[x]` Implement Pre-emptive Veto logic.
 
 ### Module 2: Forensic Traceability Engine
 - `[ ]` Implement Reasoning-Path Extraction capture.
