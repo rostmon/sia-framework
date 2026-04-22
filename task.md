@@ -24,8 +24,8 @@
 - `[x]` Implement Integrity Signature appending.
 
 ## Phase 3: Integration & API Layer
-- `[ ]` Create SIA Proxy/Middleware interface.
-- `[ ]` Implement FastAPI Sidecar.
+- `[x]` Create SIA Proxy/Middleware interface.
+- `[x]` Implement FastAPI Sidecar.
 
 ## Phase 4: Testing & Proof of Concept (PoC)
 - `[ ]` Setup Mock LLM.
