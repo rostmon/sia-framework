@@ -19,8 +19,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Provider extras — only install what you need:
+#   pip install sia-framework[openai]
+#   pip install sia-framework[anthropic]
+#   pip install sia-framework[huggingface]
+#   pip install sia-framework[all]
+openai      = ["openai>=1.0"]
+anthropic   = ["anthropic>=0.20"]
+huggingface = ["huggingface-hub>=0.20"]
+all         = ["openai>=1.0", "anthropic>=0.20", "huggingface-hub>=0.20"]
 dev = [
     "pytest>=7.0",
     "black",
-    "flake8"
+    "flake8",
 ]
