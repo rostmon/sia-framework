@@ -1,16 +1,16 @@
 # EU AI Act: Annex IV Technical Documentation Evidence
-**Generated on:** 2026-04-22T09:33:46.612976Z
+**Generated on:** 2026-04-22T10:17:04.691297Z
 
 This report provides objective runtime evidence of compliance with the EU AI Act High-Risk System requirements, generated directly from the immutable `audit_ledger.jsonl`.
 
 ## 1. Runtime Operational Summary
-- **Total Standard Inferences Processed:** 3
-- **Total Active Interventions:** 5
-- **Average Compliance Confidence Score:** 0.60
+- **Total Standard Inferences Processed:** 5
+- **Total Active Interventions:** 11
+- **Average Compliance Confidence Score:** 0.57
 
 ## 2. Article 5 (Prohibited Practices) Evidence
 *Requirement: Ban on unacceptable risk AI practices.*
-- **Prohibited Practices Blocked (`BLOCK_PROHIBITED_PRACTICES`):** 1 instances where requests for social scoring or biometric surveillance were intercepted and dropped.
+- **Prohibited Practices Blocked (`BLOCK_PROHIBITED_PRACTICES`):** 0 instances where requests for social scoring or biometric surveillance were intercepted and dropped.
 
 ## 3. Article 10 (Data Governance) Evidence
 *Requirement: Data sets must be free of errors, personal data safeguarded, and biases examined.*
@@ -19,15 +19,15 @@ This report provides objective runtime evidence of compliance with the EU AI Act
 
 ## 4. Article 13 (Transparency) Evidence
 *Requirement: Users must be informed of AI generation and system limitations.*
-- **Contextual Disclaimers Appended (`APPEND_DISCLAIMER`):** 1 instances where Annex III specific disclaimers (e.g. Healthcare) were dynamically added to the AI output.
+- **Contextual Disclaimers Appended (`APPEND_DISCLAIMER`):** 0 instances where Annex III specific disclaimers (e.g. Healthcare) were dynamically added to the AI output.
 
 ## 5. Article 14 (Human Oversight) Evidence
 *Requirement: High-risk Annex III tasks must allow for human intervention.*
-- **Human Veto Gates Triggered (`HTTP 202`):** 1 instances where the system detected high-risk intent (e.g., employment, healthcare) and paused execution for mandatory human signature.
+- **Human Veto Gates Triggered (`HTTP 202`):** 3 instances where the system detected high-risk intent (e.g., employment, healthcare) and paused execution for mandatory human signature.
 
 ## 6. Article 15 (Accuracy, Robustness, and Cybersecurity) Evidence
 *Requirement: System must be resilient against hallucinations and adversarial attacks.*
-- **Hallucinations Blocked (`BLOCK_AND_REWRITE`):** 1 instances where the Truth Razor detected low-confidence/unverified facts and intercepted the output.
+- **Hallucinations Blocked (`BLOCK_AND_REWRITE`):** 2 instances where the Truth Razor detected low-confidence/unverified facts and intercepted the output.
 - **Prompt Injections Blocked (`BLOCK_PROMPT_INJECTION`):** 1 instances where adversarial jailbreaks were detected and blocked at ingress.
 
 ## 7. Article 12 (Traceability) Cryptographic Ledger
@@ -36,10 +36,10 @@ Below is a sampled audit trail of the most recent cryptographic signatures ancho
 
 | Timestamp | SHA-256 Signature Hash |
 | :--- | :--- |
-| 2026-04-22T09:33:46.530835Z | `7fdaf444db29945ad6736f1eb4e02b373c36b7404c2c9019526827e6686831b0` |
-| 2026-04-22T09:33:46.535540Z | `a01109261a4927b70e70d3e86bfaa46f1dcfe3e7fa80fb4569d118695c1f629c` |
-| 2026-04-22T09:33:46.540950Z | `a330830fbf261c68d1bb83a55536f7042a0f3af51d3edbf5e8b937f1c68ede35` |
-| 2026-04-22T09:33:46.543673Z | `c7ad87067526774c901f562dc61ea7a1df489d5117525438502da7bf72de1e8c` |
-| 2026-04-22T09:33:46.548952Z | `2c164f1b96ee2c6f4805d4b716b9d0a2842f86303dc254b3b9d811dd2c5945ec` |
-| 2026-04-22T09:33:46.550025Z | `0be1b3e5d967fd6451de48f7d98c42b03ca7b3f10343cc5130d4ce3ffbdb3c79` |
-| 2026-04-22T09:33:46.550025Z | `667d3e7f559ca5c42cf557ea852a1a83cf1d4ce3937144bcbe44dc6cbc9c7488` |
+| 2026-04-22T10:16:46.216295Z | `a3ff02cc8b5ae34f2c35b834b39e895d406a1d5588874972a3054c6e38f9c869` |
+| 2026-04-22T10:16:46.228987Z | `8c7dc4849dffa28a7b09d3aaf66fd1b26c8313718d1fc3517aeec32e71b9c91a` |
+| 2026-04-22T10:16:46.239562Z | `6ed5a4c8be2c9ef7b387857ee9154c950f343f368251a70f326b6a52b66bd397` |
+| 2026-04-22T10:16:46.245006Z | `21e24b73bb635e688f59fe0ae5d4ae387c7130db23baff343338ea7dea2f1832` |
+| 2026-04-22T10:16:46.263087Z | `7ed9c948c177bb64ce3810f551536c1cb7bac716e5f8ff8e7a01d6918989075c` |
+| 2026-04-22T10:16:46.275816Z | `3915e2ed84dca5c4336ed0ef7b9388942b96d553013be55bac444e5f9e950dd1` |
+| 2026-04-22T10:16:46.285670Z | `9fe84512f9ccae7197dd6cb0880d0b71d369fb919d529ff85385b2d3042a4e47` |

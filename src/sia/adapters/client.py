@@ -1,33 +1,10 @@
 """
-SIAClient — unified, plug-and-play compliance orchestrator.
-
-This is the single entry point that makes any AI/ML model EU AI Act compliant.
-Replace your existing model call with SIAClient.chat() to apply the full
-SIA governance pipeline transparently.
-
-Example (drop-in for OpenAI):
-    # Before
-    response = openai.chat.completions.create(...)
-    content = response.choices[0].message.content
-
-    # After (EU AI Act compliant)
-    from sia.adapters import SIAClient
-    from sia.adapters.openai_adapter import OpenAIAdapter
-
-    client = SIAClient(
-        adapter=OpenAIAdapter(model="gpt-4o"),
-        config_path="configs/eu_ai_act_full.yaml",
-        environment="prod",
-    )
-    response = client.chat("Your prompt here")
-    print(response.content)         # The governed output
-    print(response.trace_hash)      # SHA-256 audit anchor
-    print(response.compliant)       # True/False
+SIAClient — updated to handle new engine signature (4-tuple egress return).
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 from sia.adapters.base import ModelAdapter
 from sia.core.config import load_logic_gates
@@ -40,33 +17,20 @@ from sia.traceability.ledger import AuditLedger
 
 @dataclass
 class SIAResponse:
-    """
-    The governed, compliance-annotated response returned by SIAClient.chat().
-
-    Attributes:
-        content:          The actual output text (or block message if intercepted).
-        compliant:        Whether the full pipeline passed all governance gates.
-        action:           One of "PASSED" | "BLOCKED" | "HUMAN_VETO" | "REWRITTEN".
-        article_triggered: EU AI Act article that caused an intervention, if any.
-        trace_hash:       SHA-256 anchor to the immutable audit_ledger.jsonl entry.
-        provider:         The underlying model provider (e.g., "openai", "mock").
-        confidence:       Normalized confidence score from the model (0.0–1.0).
-    """
+    """Governed, compliance-annotated response from SIAClient.chat()."""
     content: str
     compliant: bool
-    action: str                              # "PASSED" | "BLOCKED" | "HUMAN_VETO" | "REWRITTEN"
+    action: str                              # PASSED | BLOCKED | HUMAN_VETO | REWRITTEN
     article_triggered: Optional[str]
     trace_hash: str
     provider: str
     confidence: float
+    http_status: int                         # Standard HTTP code reflecting governance outcome
+    http_headers: Dict[str, str] = field(default_factory=dict)  # e.g. X-SIA-AI-Generated
 
 
 class SIAClient:
-    """
-    Plug-and-play EU AI Act compliance wrapper for any AI/ML model.
-
-    Instantiate once, call .chat() anywhere in your existing pipeline.
-    """
+    """Plug-and-play EU AI Act compliance wrapper for any AI/ML model."""
 
     def __init__(
         self,
@@ -83,25 +47,24 @@ class SIAClient:
         self._ledger = AuditLedger(db_path=ledger_path)
         self._egress = DeterministicEgressValidator()
 
-    def chat(self, prompt: str, **model_kwargs) -> SIAResponse:
+    def chat(self, prompt: str, rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
         """
         Submit a prompt through the full SIA governance pipeline.
 
         Args:
             prompt:       The user's raw input prompt.
-            **model_kwargs: Optional kwargs forwarded to the adapter (temperature, etc.)
-
-        Returns:
-            SIAResponse with governed content + compliance metadata.
+            rag_metadata: Optional dict from the RAG layer:
+                          {"document_id": "...", "source_domain": "internal_kb"}
+            **model_kwargs: Forwarded to the adapter (temperature, max_tokens, etc.)
         """
-        # ── 1. INGRESS: Article 5, 10, 14, 15.4 gates ──────────────────────────
+        # ── 1. INGRESS ──────────────────────────────────────────────────────
         ingress_result = self._ingress.process_prompt(prompt)
         trigger = ingress_result.get("trigger_paragraph")
+        http_status = ingress_result.get("http_status") or 200
 
-        # Hard block (Article 5, 10.2f, 15.4)
         if not ingress_result["allowed"]:
             reason = ingress_result.get("reason", "Governance gate blocked execution.")
-            hash_ = self._ledger.record_intervention(prompt, trigger, "HTTP_403_FORBIDDEN")
+            hash_ = self._ledger.record_intervention(prompt, trigger, f"HTTP_{http_status}_BLOCKED")
             return SIAResponse(
                 content=f"[SIA BLOCKED] {reason}",
                 compliant=False,
@@ -110,9 +73,9 @@ class SIAClient:
                 trace_hash=hash_,
                 provider=self._adapter.provider_name,
                 confidence=0.0,
+                http_status=http_status,
             )
 
-        # Soft block: Human Veto required (Article 14.4)
         if ingress_result.get("requires_human_review"):
             hash_ = self._ledger.record_intervention(prompt, trigger, "HTTP_202_ACCEPTED_HUMAN_VETO")
             return SIAResponse(
@@ -123,25 +86,33 @@ class SIAClient:
                 trace_hash=hash_,
                 provider=self._adapter.provider_name,
                 confidence=0.0,
+                http_status=202,
             )
 
-        # ── 2. MODEL CALL via pluggable adapter ──────────────────────────────────
+        # ── 2. MODEL CALL ───────────────────────────────────────────────────
         model_response = self._adapter.generate(
             ingress_result["sanitized_prompt"], **model_kwargs
         )
 
-        # ── 3. EGRESS: Article 13, 15.1, 15.3 gates ─────────────────────────────
-        is_compliant, governed_output, watermark = self._engine.evaluate_egress(
+        # ── 3. EGRESS ───────────────────────────────────────────────────────
+        is_compliant, governed_output, watermark, http_headers = self._engine.evaluate_egress(
             model_response.content,
             confidence=model_response.confidence,
             rag_verified=model_response.rag_verified,
+            rag_metadata=rag_metadata,
         )
 
+        final_status = 200 if is_compliant else 422   # 422 Unprocessable — output blocked/rewritten
         action = "PASSED" if is_compliant else "REWRITTEN"
+
         if watermark:
             governed_output += f"\n\n[Transparency]: {watermark}"
 
-        # ── 4. TRACEABILITY: Article 12.1 cryptographic trace ───────────────────
+        # Add AI-generated header
+        http_headers["X-SIA-Provider"] = self._adapter.provider_name
+        http_headers["X-SIA-Compliant"] = str(is_compliant).lower()
+
+        # ── 4. TRACEABILITY ─────────────────────────────────────────────────
         reasoning = self._extractor.extract({"content": model_response.raw.get("reasoning", "")})
         compliance_score = model_response.confidence if is_compliant else 0.0
 
@@ -161,4 +132,6 @@ class SIAClient:
             trace_hash=hash_,
             provider=self._adapter.provider_name,
             confidence=model_response.confidence,
+            http_status=final_status,
+            http_headers=http_headers,
         )

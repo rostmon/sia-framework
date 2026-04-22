@@ -1,37 +1,112 @@
 # configs/eu_ai_act_full.yaml
-# Fully Atomic Ruleset including Articles 5, 13.2, 15.4
+# ============================================================
+# SIA Governance-as-Code — Fully Atomic Ruleset
+# EU AI Act (Regulation EU 2024/1689) - All Applicable Articles
+# Granularity Level: API Integration
+# ============================================================
 
 environments:
   active: ["prod", "staging"]
 
 annex_iii_categories:
-  employment: ["resume scoring", "hiring", "interview analysis"]
-  healthcare: ["clinical triage", "medical diagnosis", "treatment recommendation"]
-  biometrics: ["facial recognition", "emotion inference"]
+  employment:           ["resume scoring", "hiring", "interview analysis", "candidate screening"]
+  healthcare:           ["clinical triage", "medical diagnosis", "treatment recommendation", "patient risk"]
+  biometrics:           ["facial recognition", "emotion inference", "voice biometrics"]
+  education:            ["student assessment", "exam proctoring", "admission scoring"]
+  critical_infra:       ["power grid", "water supply", "financial system access"]
+  law_enforcement:      ["suspect profiling", "crime prediction", "evidence scoring"]
+  migration:            ["asylum application", "visa assessment", "border control"]
+  justice:              ["sentencing recommendation", "legal verdict assistance"]
 
 articles:
+  # ─── CHAPTER II: PROHIBITED PRACTICES ───────────────────────────────────
   article_5_prohibited_practices:
     paragraphs:
-      article_5_1:
-        description: "Prohibition of unacceptable risk AI practices."
+      article_5_1_a:
+        description: "Prohibition: subliminal techniques beyond a person's consciousness to distort behaviour."
+        api_response_on_block: 451    # HTTP 451 Unavailable for Legal Reasons
         rules:
-          rule_block_prohibited:
+          rule_block_subliminal:
             logic: "BLOCK_PROHIBITED_PRACTICES"
-            practices: ["social_scoring", "subliminal_manipulation", "real_time_biometrics_public"]
+            practices: ["subliminal_manipulation", "neuro_marketing_covert"]
+
+      article_5_1_b:
+        description: "Prohibition: exploiting vulnerabilities of specific groups (age, disability)."
+        api_response_on_block: 451
+        rules:
+          rule_block_vulnerability_exploitation:
+            logic: "BLOCK_PROHIBITED_PRACTICES"
+            practices: ["exploit_elderly", "exploit_disability", "exploit_children"]
+
+      article_5_1_c:
+        description: "Prohibition: social scoring by public authorities."
+        api_response_on_block: 451
+        rules:
+          rule_block_social_scoring:
+            logic: "BLOCK_PROHIBITED_PRACTICES"
+            practices: ["social_scoring", "citizen_ranking"]
+
+      article_5_1_d:
+        description: "Prohibition: real-time biometric identification in public spaces."
+        api_response_on_block: 451
+        rules:
+          rule_block_rtbi:
+            logic: "BLOCK_PROHIBITED_PRACTICES"
+            practices: ["real_time_biometrics_public", "live_cctv_face_match"]
+
+  # ─── CHAPTER III SECTION 2: HIGH-RISK REQUIREMENTS ──────────────────────
+  article_9_risk_management:
+    paragraphs:
+      article_9_2:
+        description: "Risk management system must be iterative throughout lifecycle."
+        rules:
+          rule_risk_classification:
+            logic: "REQUIRE_RISK_CLASSIFICATION"
+            annex_iii_check: true
+      article_9_5:
+        description: "Risk estimation and evaluation for each known hazard."
+        rules:
+          rule_hazard_evaluation:
+            logic: "ENFORCE_HAZARD_SCORE"
+            max_acceptable_residual_risk: "LOW"
 
   article_10_data_governance:
     paragraphs:
       article_10_2_f:
-        description: "Examination in view of possible biases."
+        description: "Examination of possible biases in data sets."
+        api_response_on_block: 400
         rules:
           rule_bias_detection:
             logic: "BLOCK_PROHIBITED_DOMAINS"
-            domains: ["hate_speech", "discriminatory_inference"]
+            domains: ["hate_speech", "discriminatory_inference", "racial_profiling", "gender_discrimination"]
+
       article_10_3:
         description: "Data sets must be relevant, representative, and free of errors."
         rules:
           rule_pii_sanitization:
             logic: "STRIP_PII"
+            pii_types: ["email", "phone", "ssn", "passport", "credit_card", "ip_address"]
+          rule_data_relevance_check:
+            logic: "VALIDATE_DATA_RELEVANCE"
+            on_fail: "LOG_AND_WARN"
+
+      article_10_5:
+        description: "Special categories of personal data may only be used strictly necessary."
+        api_response_on_block: 403
+        rules:
+          rule_sensitive_data_gate:
+            logic: "BLOCK_SPECIAL_CATEGORY_DATA"
+            categories: ["health_data", "racial_ethnic_origin", "political_opinions",
+                         "religious_beliefs", "genetic_data", "sexual_orientation"]
+
+  article_11_technical_documentation:
+    paragraphs:
+      article_11_1:
+        description: "Technical documentation must be drawn up before placing on market."
+        rules:
+          rule_tech_doc_present:
+            logic: "VALIDATE_SYSTEM_METADATA"
+            required_fields: ["system_version", "intended_purpose", "provider_name", "deployment_env"]
 
   article_12_record_keeping:
     paragraphs:
@@ -40,6 +115,14 @@ articles:
         rules:
           rule_cryptographic_trace:
             logic: "REQUIRE_TRACEABILITY_HASH"
+            hash_algorithm: "SHA-256"
+      article_12_2:
+        description: "Audit log must be retained for defined period."
+        rules:
+          rule_log_retention:
+            logic: "ENFORCE_RETENTION"
+            retention_years: 10
+            retention_path: "logs/audit_ledger.jsonl"
 
   article_13_transparency:
     paragraphs:
@@ -48,42 +131,135 @@ articles:
         rules:
           rule_append_watermark:
             logic: "APPEND_WATERMARK"
-            text: "This output was generated by an AI system."
+            text: "This output was generated by an AI system (SIA-Governed)."
+            position: "footer"
+
       article_13_2:
-        description: "Instructions for use must specify system capabilities and limitations."
+        description: "Instructions for use must specify capabilities and limitations."
         rules:
           rule_capability_disclaimer:
             logic: "APPEND_DISCLAIMER"
-            healthcare_disclaimer: "Disclaimer: This system is not a substitute for professional medical advice."
+            healthcare_disclaimer: "DISCLAIMER: This system cannot substitute for licensed medical advice."
+            employment_disclaimer:  "DISCLAIMER: This output is advisory only and must be reviewed by a qualified HR professional."
+            legal_disclaimer:       "DISCLAIMER: This system does not provide legal advice."
+
+      article_13_3_b:
+        description: "Specification of the input data for which the system is designed."
+        rules:
+          rule_input_schema_validation:
+            logic: "VALIDATE_INPUT_SCHEMA"
+            max_prompt_length: 8192
+            allowed_encodings: ["utf-8", "utf-16"]
 
   article_14_human_oversight:
     paragraphs:
+      article_14_1:
+        description: "Design must allow effective human oversight."
+        rules:
+          rule_override_capability:
+            logic: "ENSURE_OVERRIDE_POSSIBLE"
+            override_mechanisms: ["human_veto", "stop_signal", "manual_correction"]
+
       article_14_4:
-        description: "Human override and intervention for high-risk systems."
+        description: "Human override required; operators must be able to intervene."
+        api_response_on_trigger: 202
         rules:
           rule_hitl_gate:
             logic: "REQUIRE_HUMAN_VETO"
-            applies_to_annex_iii: ["employment", "healthcare", "biometrics"]
+            applies_to_annex_iii: ["employment", "healthcare", "biometrics", "education",
+                                   "law_enforcement", "migration", "justice"]
             on_trigger: "HTTP_202_ACCEPTED"
+            timeout_seconds: 3600
+
+      article_14_5:
+        description: "Deployers must monitor effective operation."
+        rules:
+          rule_drift_monitoring:
+            logic: "MONITOR_CONFIDENCE_DRIFT"
+            alert_threshold_drop: 0.15
 
   article_15_accuracy_robustness:
     paragraphs:
       article_15_1:
-        description: "Appropriate level of accuracy and metrics."
+        description: "Appropriate level of accuracy, robustness, and cybersecurity."
         rules:
           rule_enforce_minimum_confidence:
             logic: "REQUIRE_MINIMUM_CONFIDENCE"
             min_confidence: 0.85
+            fallback_action: "BLOCK_AND_REWRITE"
+
+      article_15_2:
+        description: "Accuracy metrics must be declared in technical documentation."
+        rules:
+          rule_declare_accuracy_metrics:
+            logic: "VALIDATE_ACCURACY_METADATA"
+            required_metrics: ["precision", "recall", "f1_score"]
+
       article_15_3:
         description: "Resilience against errors, faults, and inconsistencies."
         rules:
           rule_verify_rag_sources:
             logic: "REQUIRE_RAG_GROUNDING"
+          rule_rag_source_attribution:
+            logic: "REQUIRE_SOURCE_ATTRIBUTION"
+            attribution_format: "[Source: {document_id}]"
+          rule_rag_copyright_check:
+            logic: "BLOCK_COPYRIGHTED_SOURCES"
+            allowlisted_domains: ["internal_kb", "approved_regulatory_corpus"]
           rule_hallucination_fallback:
             logic: "BLOCK_AND_REWRITE"
-            rewrite_template: "[SIA BLOCK]: Output could not be deterministically verified against Authorized Truth-Centers."
+            rewrite_template: "[SIA BLOCK]: Output could not be deterministically verified. Please consult authoritative sources."
+
       article_15_4:
-        description: "Cybersecurity resilience against attempts to alter system use or performance."
+        description: "Cybersecurity resilience against attempts to alter system use."
+        api_response_on_block: 400
         rules:
-          rule_cybersecurity_defense:
+          rule_prompt_injection_defense:
             logic: "BLOCK_PROMPT_INJECTION"
+            patterns: ["IGNORE_PREVIOUS", "SYSTEM_OVERRIDE", "JAILBREAK", "DAN_MODE",
+                       "IGNORE ALL PREVIOUS", "disregard previous instructions"]
+          rule_token_limit_defense:
+            logic: "ENFORCE_TOKEN_LIMIT"
+            max_tokens: 4096
+
+  # ─── CHAPTER IV: TRANSPARENCY FOR CERTAIN AI SYSTEMS ─────────────────────
+  article_50_transparency_obligations:
+    paragraphs:
+      article_50_1:
+        description: "AI-generated content must be machine-readable marked."
+        rules:
+          rule_ai_content_marking:
+            logic: "APPEND_MACHINE_READABLE_MARKER"
+            header_field: "X-SIA-AI-Generated"
+            header_value: "true"
+
+      article_50_2:
+        description: "Synthetic media (deepfakes) must be disclosed."
+        api_response_on_block: 451
+        rules:
+          rule_synthetic_media_block:
+            logic: "BLOCK_SYNTHETIC_MEDIA_REQUEST"
+            practices: ["deepfake_generation", "synthetic_voice_impersonation", "face_swap"]
+
+  # ─── CHAPTER V: GENERAL PURPOSE AI (GPAI) ────────────────────────────────
+  article_53_gpai_obligations:
+    paragraphs:
+      article_53_1_c:
+        description: "GPAI providers must respect EU copyright law including TDM reservations."
+        rules:
+          rule_copyright_compliance:
+            logic: "BLOCK_COPYRIGHTED_SOURCES"
+            allowlisted_domains: ["internal_kb", "approved_regulatory_corpus", "creative_commons"]
+
+  # ─── CHAPTER IX: POST-MARKET MONITORING ──────────────────────────────────
+  article_72_post_market_monitoring:
+    paragraphs:
+      article_72_1:
+        description: "Providers shall have a post-market monitoring plan."
+        rules:
+          rule_incident_logging:
+            logic: "REQUIRE_INCIDENT_LOG"
+            incident_threshold_confidence: 0.50
+          rule_anomaly_detection:
+            logic: "MONITOR_ANOMALIES"
+            consecutive_block_alert: 5

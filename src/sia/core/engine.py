@@ -1,128 +1,218 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from sia.core.config import EUAIActConfig
 
+
 class RuleEvaluationEngine:
+    """
+    Evaluates all atomic EU AI Act governance rules against a request/response pair.
+    Ordered by regulatory severity: cybersecurity > prohibited > bias > data > HITL > egress.
+    """
+
     def __init__(self, config: EUAIActConfig, environment: str = "prod"):
         self.config = config
         self.environment = environment
-        self.active_category = None  # Store category for egress disclaimers
+        self.active_category: Optional[str] = None
 
     def is_environment_active(self) -> bool:
         return self.environment in self.config.environments.active
 
+    def _get_para(self, article_key: str, para_key: str):
+        """Safe paragraph getter."""
+        art = self.config.articles.get(article_key)
+        if art:
+            return art.paragraphs.get(para_key)
+        return None
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # INGRESS EVALUATION
+    # ──────────────────────────────────────────────────────────────────────────
     def evaluate_ingress(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluates Articles 5, 10, 14, and 15.4 atomic rules.
+        Evaluates ingress-time gates in priority order:
+        1. Article 15.4 (Prompt Injection / Cybersecurity)
+        2. Article 5   (Prohibited Practices)
+        3. Article 10.2f (Bias/Hate Speech)
+        4. Article 10.5 (Special Category Data)
+        5. Article 14.4 (Human-in-the-Loop / Annex III)
+        6. Article 9.2  (Risk Classification)
         """
         if not self.is_environment_active():
-            return {"allowed": True, "requires_human_review": False, "trigger_paragraph": None, "trigger_reason": None}
-            
+            return {"allowed": True, "requires_human_review": False,
+                    "trigger_paragraph": None, "trigger_reason": None}
+
         intent = context.get("intent", "low_risk")
         prompt_text = context.get("prompt_text", "").lower()
+        prompt_upper = context.get("prompt_text", "")
         self.active_category = None
-        
-        # 0. Check Article 15.4 (Cybersecurity / Prompt Injection)
-        art_15 = self.config.articles.get("article_15_accuracy_robustness")
-        if art_15:
-             para_15_4 = art_15.paragraphs.get("article_15_4")
-             if para_15_4:
-                 cyb_rule = para_15_4.rules.get("rule_cybersecurity_defense")
-                 if cyb_rule and cyb_rule.logic == "BLOCK_PROMPT_INJECTION":
-                     if intent == "prompt_injection":
-                         return {"allowed": False, "requires_human_review": False, "trigger_paragraph": "article_15_4", "trigger_reason": "Adversarial Prompt Injection Detected"}
 
-        # 1. Check Article 5 (Prohibited Practices)
+        # ── 1. Article 15.4: Prompt Injection ─────────────────────────────────
+        para_15_4 = self._get_para("article_15_accuracy_robustness", "article_15_4")
+        if para_15_4:
+            inj_rule = para_15_4.rules.get("rule_prompt_injection_defense")
+            if inj_rule and inj_rule.logic == "BLOCK_PROMPT_INJECTION":
+                patterns = inj_rule.patterns or []
+                if intent == "prompt_injection" or any(p.lower() in prompt_upper.lower() for p in patterns):
+                    return self._block("article_15_4", "Adversarial Prompt Injection Detected", 400)
+
+            tok_rule = para_15_4.rules.get("rule_token_limit_defense")
+            if tok_rule and tok_rule.max_tokens:
+                approx_tokens = len(prompt_upper.split()) * 1.3
+                if approx_tokens > tok_rule.max_tokens:
+                    return self._block("article_15_4", "Prompt exceeds maximum token limit", 400)
+
+        # ── 2. Article 5: All prohibited practice sub-paragraphs ──────────────
         art_5 = self.config.articles.get("article_5_prohibited_practices")
         if art_5:
-             para_5_1 = art_5.paragraphs.get("article_5_1")
-             if para_5_1:
-                 prohib_rule = para_5_1.rules.get("rule_block_prohibited")
-                 if prohib_rule and prohib_rule.logic == "BLOCK_PROHIBITED_PRACTICES":
-                     if intent in prohib_rule.practices:
-                         return {"allowed": False, "requires_human_review": False, "trigger_paragraph": "article_5_1", "trigger_reason": f"Prohibited Practice: {intent}"}
+            for para_key, para in art_5.paragraphs.items():
+                for rule in para.rules.values():
+                    if rule.logic == "BLOCK_PROHIBITED_PRACTICES":
+                        if intent in (rule.practices or []):
+                            return self._block(para_key, f"Prohibited Practice: {intent}",
+                                               para.api_response_on_block or 451)
 
-        # 2. Check Article 10.2(f) (Bias / Prohibited Domains)
-        art_10 = self.config.articles.get("article_10_data_governance")
-        if art_10:
-            para_10_2_f = art_10.paragraphs.get("article_10_2_f")
-            if para_10_2_f:
-                bias_rule = para_10_2_f.rules.get("rule_bias_detection")
-                if bias_rule and bias_rule.logic == "BLOCK_PROHIBITED_DOMAINS":
-                    if intent in bias_rule.domains:
-                        return {"allowed": False, "requires_human_review": False, "trigger_paragraph": "article_10_2_f", "trigger_reason": f"Prohibited Domain: {intent}"}
+        # ── 3. Article 50.2: Synthetic Media / Deepfake ───────────────────────
+        para_50_2 = self._get_para("article_50_transparency_obligations", "article_50_2")
+        if para_50_2:
+            synth_rule = para_50_2.rules.get("rule_synthetic_media_block")
+            if synth_rule and intent in (synth_rule.practices or []):
+                return self._block("article_50_2", f"Synthetic Media Request Blocked: {intent}",
+                                   para_50_2.api_response_on_block or 451)
 
-        # 3. Check Article 14.4 (HITL)
+        # ── 4. Article 10.2(f): Bias/Hate Speech ─────────────────────────────
+        para_10_2_f = self._get_para("article_10_data_governance", "article_10_2_f")
+        if para_10_2_f:
+            bias_rule = para_10_2_f.rules.get("rule_bias_detection")
+            if bias_rule and intent in (bias_rule.domains or []):
+                return self._block("article_10_2_f", f"Prohibited Domain: {intent}",
+                                   para_10_2_f.api_response_on_block or 400)
+
+        # ── 5. Article 10.5: Special Category Data ────────────────────────────
+        para_10_5 = self._get_para("article_10_data_governance", "article_10_5")
+        if para_10_5:
+            sc_rule = para_10_5.rules.get("rule_sensitive_data_gate")
+            if sc_rule and intent in (sc_rule.categories or []):
+                return self._block("article_10_5", f"Special Category Data Blocked: {intent}",
+                                   para_10_5.api_response_on_block or 403)
+
+        # ── 6. Article 14.4: Human Veto (Annex III) ──────────────────────────
+        para_14_4 = self._get_para("article_14_human_oversight", "article_14_4")
         requires_human_review = False
         trigger_paragraph = None
-        
-        art_14 = self.config.articles.get("article_14_human_oversight")
-        if art_14:
-            para_14_4 = art_14.paragraphs.get("article_14_4")
-            if para_14_4:
-                hitl_rule = para_14_4.rules.get("rule_hitl_gate")
-                if hitl_rule and hitl_rule.logic == "REQUIRE_HUMAN_VETO":
-                    for category, keywords in self.config.annex_iii_categories.items():
-                        if category in hitl_rule.applies_to_annex_iii:
-                            if any(kw in prompt_text for kw in keywords):
-                                requires_human_review = True
-                                trigger_paragraph = "article_14_4"
-                                self.active_category = category # Save for Article 13.2
-                                break
+
+        if para_14_4:
+            hitl_rule = para_14_4.rules.get("rule_hitl_gate")
+            if hitl_rule and hitl_rule.logic == "REQUIRE_HUMAN_VETO":
+                for category, keywords in self.config.annex_iii_categories.items():
+                    if category in (hitl_rule.applies_to_annex_iii or []):
+                        if any(kw in prompt_text for kw in keywords):
+                            requires_human_review = True
+                            trigger_paragraph = "article_14_4"
+                            self.active_category = category
+                            break
 
         return {
             "allowed": True,
             "requires_human_review": requires_human_review,
             "trigger_paragraph": trigger_paragraph,
-            "trigger_reason": "Annex III Mapping" if requires_human_review else None
+            "http_status": 202 if requires_human_review else None,
+            "trigger_reason": "Annex III High-Risk Category Detected" if requires_human_review else None,
         }
 
-    def evaluate_egress(self, output: str, confidence: float, rag_verified: bool = False) -> Tuple[bool, str, str]:
+    # ──────────────────────────────────────────────────────────────────────────
+    # EGRESS EVALUATION
+    # ──────────────────────────────────────────────────────────────────────────
+    def evaluate_egress(
+        self, output: str, confidence: float, rag_verified: bool = False,
+        rag_metadata: Optional[Dict] = None
+    ) -> Tuple[bool, str, str, Dict]:
         """
-        Evaluates Article 13 and 15 atomic rules on output.
-        Returns (is_compliant, modified_output, watermark)
+        Evaluates egress-time gates:
+        - Article 15.1/3 (Accuracy, RAG grounding, Copyright, Hallucination)
+        - Article 13.1/2/3 (Transparency, Disclaimers, Watermarks)
+        - Article 50.1    (Machine-readable AI marker)
+
+        Returns: (is_compliant, modified_output, watermark, http_headers)
         """
         if not self.is_environment_active():
-            return True, output, ""
+            return True, output, "", {}
 
         is_compliant = True
         modified_output = output
         watermark = ""
+        http_headers: Dict[str, str] = {}
 
-        # Article 15.1 Check (Confidence)
-        art_15 = self.config.articles.get("article_15_accuracy_robustness")
-        if art_15:
-            para_15_1 = art_15.paragraphs.get("article_15_1")
-            if para_15_1:
-                acc_rule = para_15_1.rules.get("rule_enforce_minimum_confidence")
-                if acc_rule and confidence < acc_rule.min_confidence:
+        # ── Article 15.1: Minimum Confidence ─────────────────────────────────
+        para_15_1 = self._get_para("article_15_accuracy_robustness", "article_15_1")
+        if para_15_1:
+            acc_rule = para_15_1.rules.get("rule_enforce_minimum_confidence")
+            if acc_rule and confidence < (acc_rule.min_confidence or 0.85):
+                is_compliant = False
+
+        # ── Article 15.3: RAG Grounding, Attribution, Copyright ───────────────
+        para_15_3 = self._get_para("article_15_accuracy_robustness", "article_15_3")
+        if para_15_3:
+            rag_rule    = para_15_3.rules.get("rule_verify_rag_sources")
+            copy_rule   = para_15_3.rules.get("rule_rag_copyright_check")
+            attrib_rule = para_15_3.rules.get("rule_rag_source_attribution")
+            fallback    = para_15_3.rules.get("rule_hallucination_fallback")
+
+            # Copyright check on RAG metadata
+            if copy_rule and rag_metadata:
+                source_domain = rag_metadata.get("source_domain", "unknown")
+                allowed = copy_rule.allowlisted_domains or []
+                if source_domain not in allowed:
                     is_compliant = False
-            
-            # Article 15.3 Check (RAG Verification & Fallback)
-            para_15_3 = art_15.paragraphs.get("article_15_3")
-            if para_15_3:
-                rag_rule = para_15_3.rules.get("rule_verify_rag_sources")
-                fallback_rule = para_15_3.rules.get("rule_hallucination_fallback")
-                
-                if (rag_rule and rag_rule.logic == "REQUIRE_RAG_GROUNDING" and not rag_verified) or not is_compliant:
-                    is_compliant = False
-                    if fallback_rule and fallback_rule.logic == "BLOCK_AND_REWRITE":
-                        modified_output = fallback_rule.rewrite_template
 
-        # Article 13.1 & 13.2 Check (Transparency & Disclaimers)
-        art_13 = self.config.articles.get("article_13_transparency")
-        if art_13:
-            # 13.1 Watermark
-            para_13_1 = art_13.paragraphs.get("article_13_1")
-            if para_13_1:
-                wm_rule = para_13_1.rules.get("rule_append_watermark")
-                if wm_rule and wm_rule.logic == "APPEND_WATERMARK":
-                    watermark = wm_rule.text
-                    
-            # 13.2 Disclaimer
-            para_13_2 = art_13.paragraphs.get("article_13_2")
-            if para_13_2 and self.active_category == "healthcare":
-                disc_rule = para_13_2.rules.get("rule_capability_disclaimer")
-                if disc_rule and disc_rule.logic == "APPEND_DISCLAIMER":
-                     watermark += f"\n{disc_rule.healthcare_disclaimer}"
+            # RAG grounding required but not verified
+            if rag_rule and not rag_verified:
+                is_compliant = False
 
-        return is_compliant, modified_output, watermark
+            # Apply fallback rewrite if non-compliant
+            if not is_compliant and fallback:
+                modified_output = fallback.rewrite_template or modified_output
+
+            # Source attribution — append if grounded
+            if rag_verified and attrib_rule and rag_metadata:
+                doc_id = rag_metadata.get("document_id", "UNKNOWN")
+                attribution = (attrib_rule.attribution_format or "[Source: {document_id}]")
+                modified_output += f"\n{attribution.format(document_id=doc_id)}"
+
+        # ── Article 13.1: AI Watermark ────────────────────────────────────────
+        para_13_1 = self._get_para("article_13_transparency", "article_13_1")
+        if para_13_1:
+            wm_rule = para_13_1.rules.get("rule_append_watermark")
+            if wm_rule:
+                watermark = wm_rule.text or ""
+
+        # ── Article 13.2: Contextual Disclaimer ───────────────────────────────
+        para_13_2 = self._get_para("article_13_transparency", "article_13_2")
+        if para_13_2 and self.active_category:
+            disc_rule = para_13_2.rules.get("rule_capability_disclaimer")
+            if disc_rule:
+                if self.active_category == "healthcare" and disc_rule.healthcare_disclaimer:
+                    watermark += f"\n{disc_rule.healthcare_disclaimer}"
+                elif self.active_category == "employment" and disc_rule.employment_disclaimer:
+                    watermark += f"\n{disc_rule.employment_disclaimer}"
+                elif self.active_category == "justice" and disc_rule.legal_disclaimer:
+                    watermark += f"\n{disc_rule.legal_disclaimer}"
+
+        # ── Article 50.1: Machine-Readable AI Marker ──────────────────────────
+        para_50_1 = self._get_para("article_50_transparency_obligations", "article_50_1")
+        if para_50_1:
+            mark_rule = para_50_1.rules.get("rule_ai_content_marking")
+            if mark_rule and mark_rule.header_field:
+                http_headers[mark_rule.header_field] = mark_rule.header_value or "true"
+
+        return is_compliant, modified_output, watermark, http_headers
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # HELPERS
+    # ──────────────────────────────────────────────────────────────────────────
+    def _block(self, para: str, reason: str, http_status: int) -> Dict[str, Any]:
+        return {
+            "allowed": False,
+            "requires_human_review": False,
+            "trigger_paragraph": para,
+            "trigger_reason": reason,
+            "http_status": http_status,
+        }
