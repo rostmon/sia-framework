@@ -14,6 +14,7 @@ class ComplianceReporter:
         total_inferences = 0
         total_interventions = 0
         pii_sanitized_count = 0
+        article_10_bias_blocks = 0
         article_14_triggers = 0
         article_15_blocks = 0
         total_confidence = 0.0
@@ -36,6 +37,8 @@ class ComplianceReporter:
                     total_interventions += 1
                     if record.get("trigger_paragraph") == "article_14_4":
                         article_14_triggers += 1
+                    elif record.get("trigger_paragraph") == "article_10_2_f":
+                        article_10_bias_blocks += 1
 
         avg_confidence = total_confidence / total_inferences if total_inferences > 0 else 0.0
 
@@ -50,8 +53,9 @@ This report provides objective runtime evidence of compliance with the EU AI Act
 - **Average Compliance Confidence Score:** {avg_confidence:.2f}
 
 ## 2. Article 10 (Data Governance) Evidence
-*Requirement: Data sets must be free of errors and personal data must be safeguarded.*
-- **PII Sanitization Events Executed (`STRIP_PII`):** {pii_sanitized_count} instances where sensitive personal data was automatically redacted prior to LLM processing.
+*Requirement: Data sets must be free of errors, personal data safeguarded, and biases examined.*
+- **PII Sanitization Events Executed (`STRIP_PII`):** {pii_sanitized_count} instances where sensitive personal data was automatically redacted.
+- **Prohibited Bias Blocks (`BLOCK_PROHIBITED_DOMAINS`):** {article_10_bias_blocks} instances where requests mapping to hate speech/discrimination were rejected.
 
 ## 3. Article 14 (Human Oversight) Evidence
 *Requirement: High-risk Annex III tasks must allow for human intervention.*

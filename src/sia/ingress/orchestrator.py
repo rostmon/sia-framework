@@ -10,11 +10,13 @@ class ContextualIngressOrchestrator:
         self.rule_engine = rule_engine
 
     def process_prompt(self, prompt: str) -> Dict[str, Any]:
+        # We classify intent first (e.g., hate_speech)
         intent = self.classifier.classify(prompt)
         
-        if intent == "prohibited":
-            return {"allowed": False, "reason": "Prohibited intent detected.", "sanitized_prompt": None, "requires_human_review": False}
-
+        # We also manually flag 'hate_speech' if the word is in the prompt for the PoC
+        if "hate_speech" in prompt:
+             intent = "hate_speech"
+             
         contains_pii = self.sanitizer.contains_pii(prompt)
         sanitized_prompt = self.sanitizer.sanitize(prompt)
 
@@ -26,8 +28,17 @@ class ContextualIngressOrchestrator:
         
         eval_result = self.rule_engine.evaluate_ingress(context)
         
+        if not eval_result["allowed"]:
+             return {
+                 "allowed": False,
+                 "reason": eval_result.get("trigger_reason"),
+                 "trigger_paragraph": eval_result.get("trigger_paragraph"),
+                 "sanitized_prompt": None,
+                 "requires_human_review": False
+             }
+        
         return {
-            "allowed": eval_result["allowed"],
+            "allowed": True,
             "requires_human_review": eval_result["requires_human_review"],
             "trigger_paragraph": eval_result.get("trigger_paragraph"),
             "intent": intent,

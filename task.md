@@ -64,3 +64,10 @@
 - `[x]` Expand `RISK_MANAGEMENT_SUMMARY.md` (Hazard Matrix, Acceptability Criteria).
 - `[x]` Expand `SIA_VALIDATION_REPORT.md` (Validation Protocol, Acceptance Criteria).
 - `[x]` Commit detailed documentation to repository.
+
+## Phase 10: Atomic Configuration & Comprehensive Validation
+- `[x]` Refactor `configs/eu_ai_act_full.yaml` to purely atomic rules across all articles.
+- `[x]` Update `src/sia/core/engine.py` to evaluate atomic rules.
+- `[x]` Expand `tests/test_poc.py` to run comprehensive 6-scenario integration suite.
+- `[x]` Run test suite to populate ledger.
+- `[x]` Generate comprehensive `ANNEX_IV_EVIDENCE.md`.

@@ -11,23 +11,33 @@ class RuleEvaluationEngine:
 
     def evaluate_ingress(self, context: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluates Article 10 and Article 14 paragraph rules.
+        Evaluates Article 10 and Article 14 atomic rules.
         """
         if not self.is_environment_active():
-            return {"allowed": True, "requires_human_review": False, "trigger_paragraph": None}
+            return {"allowed": True, "requires_human_review": False, "trigger_paragraph": None, "trigger_reason": None}
             
         intent = context.get("intent", "low_risk")
         prompt_text = context.get("prompt_text", "").lower()
         
+        # 1. Check Article 10.2(f) (Bias / Prohibited Domains)
+        art_10 = self.config.articles.get("article_10_data_governance")
+        if art_10:
+            para_10_2_f = art_10.paragraphs.get("article_10_2_f")
+            if para_10_2_f:
+                bias_rule = para_10_2_f.rules.get("rule_bias_detection")
+                if bias_rule and bias_rule.logic == "BLOCK_PROHIBITED_DOMAINS":
+                    if intent in bias_rule.domains:
+                        return {"allowed": False, "requires_human_review": False, "trigger_paragraph": "article_10_2_f", "trigger_reason": f"Prohibited Domain: {intent}"}
+
+        # 2. Check Article 14.4 (HITL)
         requires_human_review = False
         trigger_paragraph = None
         
-        # Check Article 14.4
         art_14 = self.config.articles.get("article_14_human_oversight")
         if art_14:
             para_14_4 = art_14.paragraphs.get("article_14_4")
             if para_14_4:
-                hitl_rule = para_14_4.rules.get("hitl_gate")
+                hitl_rule = para_14_4.rules.get("rule_hitl_gate")
                 if hitl_rule and hitl_rule.logic == "REQUIRE_HUMAN_VETO":
                     for category, keywords in self.config.annex_iii_categories.items():
                         if category in hitl_rule.applies_to_annex_iii:
@@ -39,12 +49,13 @@ class RuleEvaluationEngine:
         return {
             "allowed": True,
             "requires_human_review": requires_human_review,
-            "trigger_paragraph": trigger_paragraph
+            "trigger_paragraph": trigger_paragraph,
+            "trigger_reason": "Annex III Mapping" if requires_human_review else None
         }
 
-    def evaluate_egress(self, output: str, confidence: float) -> Tuple[bool, str, str]:
+    def evaluate_egress(self, output: str, confidence: float, rag_verified: bool = False) -> Tuple[bool, str, str]:
         """
-        Evaluates Article 13 and 15 rules on output.
+        Evaluates Article 13 and 15 atomic rules on output.
         Returns (is_compliant, modified_output, watermark)
         """
         if not self.is_environment_active():
@@ -54,30 +65,33 @@ class RuleEvaluationEngine:
         modified_output = output
         watermark = ""
 
-        # Article 15.1 and 15.3 Check
+        # Article 15.1 Check (Confidence)
         art_15 = self.config.articles.get("article_15_accuracy_robustness")
         if art_15:
-            # 15.1 Min Accuracy
             para_15_1 = art_15.paragraphs.get("article_15_1")
             if para_15_1:
-                acc_rule = para_15_1.rules.get("min_accuracy")
+                acc_rule = para_15_1.rules.get("rule_enforce_minimum_confidence")
                 if acc_rule and confidence < acc_rule.min_confidence:
                     is_compliant = False
             
-            # 15.3 Resilience
+            # Article 15.3 Check (RAG Verification & Fallback)
             para_15_3 = art_15.paragraphs.get("article_15_3")
             if para_15_3:
-                truth_rule = para_15_3.rules.get("truth_razor")
-                if truth_rule and truth_rule.logic == "REQUIRE_RAG_GROUNDING" and not is_compliant:
-                    if truth_rule.on_fail == "BLOCK_AND_REWRITE":
-                        modified_output = truth_rule.rewrite_template
+                rag_rule = para_15_3.rules.get("rule_verify_rag_sources")
+                fallback_rule = para_15_3.rules.get("rule_hallucination_fallback")
+                
+                # If RAG is required but not verified OR confidence failed
+                if (rag_rule and rag_rule.logic == "REQUIRE_RAG_GROUNDING" and not rag_verified) or not is_compliant:
+                    is_compliant = False
+                    if fallback_rule and fallback_rule.logic == "BLOCK_AND_REWRITE":
+                        modified_output = fallback_rule.rewrite_template
 
-        # Article 13.1 Check
+        # Article 13.1 Check (Transparency)
         art_13 = self.config.articles.get("article_13_transparency")
         if art_13:
             para_13_1 = art_13.paragraphs.get("article_13_1")
             if para_13_1:
-                wm_rule = para_13_1.rules.get("watermarking")
+                wm_rule = para_13_1.rules.get("rule_append_watermark")
                 if wm_rule and wm_rule.logic == "APPEND_WATERMARK":
                     watermark = wm_rule.text
 
