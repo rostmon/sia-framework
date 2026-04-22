@@ -92,6 +92,28 @@ async def health():
 async def get_metrics():
     return JSONResponse(content=collector.compute())
 
+# In-memory review queue for demo purposes
+# In production, this would be backed by a database
+review_queue = []
+
+@app.get("/reviews")
+async def get_reviews():
+    """Returns the list of pending human review requests."""
+    # We populate the queue from the ledger's HUMAN_VETO entries
+    metrics = collector.compute()
+    recent = metrics.get("recent_events", [])
+    pending = [e for e in recent if e["action"] == "HUMAN_VETO"]
+    return JSONResponse(content=pending)
+
+@app.post("/review/{trace_hash}")
+async def submit_review(trace_hash: str, decision: str):
+    """
+    Submits a human decision (Approve/Reject) for a vetoed request.
+    decision: "APPROVED" | "REJECTED"
+    """
+    # Logic to update the ledger/audit trail would go here
+    return {"status": "success", "decision": decision, "trace_hash": trace_hash}
+
 @app.get("/report/annex-iv", response_class=HTMLResponse)
 async def generate_annex_iv_report():
     """Generates an automated Annex IV Technical Documentation evidence report."""

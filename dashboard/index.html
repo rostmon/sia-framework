@@ -346,6 +346,17 @@
       </div>
     </div>
 
+    <!-- Review Queue -->
+    <div class="chart-card">
+      <div class="chart-title">Article 14.4 Review Queue</div>
+      <div class="chart-sub">Pending Human Oversight interventions</div>
+      <div id="review-queue-wrap">
+        <div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px;">
     <!-- Audit log -->
     <div class="chart-card">
       <div class="chart-title">Live Audit Log</div>
@@ -421,9 +432,55 @@
     // Audit log
     renderAuditLog(data.recent_events || []);
 
+    // Review queue
+    fetchReviews();
+
     // Last updated
     const now = new Date();
     document.getElementById("last-updated").textContent = "Connected • " + now.toLocaleTimeString();
+  }
+
+  async function fetchReviews() {
+    try {
+      const response = await fetch("/reviews");
+      const reviews = await response.json();
+      renderReviewQueue(reviews);
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    }
+  }
+
+  async function submitReview(hash, decision) {
+    try {
+      await fetch(`/review/${hash}?decision=${decision}`, { method: "POST" });
+      fetchReviews(); // Refresh
+    } catch (err) {
+      console.error("Error submitting review:", err);
+    }
+  }
+
+  function renderReviewQueue(reviews) {
+    const wrap = document.getElementById("review-queue-wrap");
+    if (!reviews.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>`;
+      return;
+    }
+    let html = `<div class="audit-log">`;
+    for (const r of reviews) {
+      html += `<div class="log-entry">
+        <div class="action-badge HUMAN_VETO">PENDING</div>
+        <div style="flex-grow:1">
+          <div class="log-prompt">${escHtml(r.prompt_preview)}</div>
+          <div style="font-size:10px;color:var(--amber);margin-top:2px">Article 14.4 Oversight Required</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="submitReview('${r.hash}','APPROVED')" style="background:var(--green); border:none; color:white; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:600;">Approve</button>
+          <button onclick="submitReview('${r.hash}','REJECTED')" style="background:var(--red); border:none; color:white; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:600;">Reject</button>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+    wrap.innerHTML = html;
   }
 
   /* ── Chart setup ──────────────────────────────────────── */

@@ -1,0 +1,16 @@
+pyyaml
+pydantic
+fastapi
+uvicorn
+httpx
+typer
+rich
+
+[dev]
+pytest
+pytest-asyncio
+black
+isort
+
+[openai]
+openai>=1.0.0

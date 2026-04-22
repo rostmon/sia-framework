@@ -3,33 +3,37 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sia"
+name = "sia-framework"
 version = "0.1.0"
-description = "Sovereign Systemic Integrity Architecture (SIA) framework"
 authors = [
-    { name="Rostmon", email="rostmon@example.com" },
+  { name="Sovereign AI Team", email="compliance@sia.framework" },
 ]
+description = "Sovereign Systemic Integrity Architecture (SIA) — EU AI Act Governance-as-Code"
 readme = "README.md"
 requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
-    "pydantic>=2.0.0",
-    "pyyaml>=6.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.23.0",
+    "pyyaml",
+    "pydantic",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "typer",
+    "rich",
 ]
 
 [project.optional-dependencies]
-# Provider extras — only install what you need:
-#   pip install sia-framework[openai]
-#   pip install sia-framework[anthropic]
-#   pip install sia-framework[huggingface]
-#   pip install sia-framework[all]
-openai      = ["openai>=1.0"]
-anthropic   = ["anthropic>=0.20"]
-huggingface = ["huggingface-hub>=0.20"]
-all         = ["openai>=1.0", "anthropic>=0.20", "huggingface-hub>=0.20"]
-dev = [
-    "pytest>=7.0",
-    "black",
-    "flake8",
-]
+openai = ["openai>=1.0.0"]
+dev = ["pytest", "pytest-asyncio", "black", "isort"]
+
+[project.scripts]
+sia = "sia.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sia*"]

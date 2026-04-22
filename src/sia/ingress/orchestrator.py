@@ -1,7 +1,9 @@
 from typing import Dict, Any, Optional
+import hashlib
 from sia.ingress.classifier import IntentClassifier
 from sia.ingress.sanitizer import DataSanitizer
 from sia.core.engine import RuleEvaluationEngine
+from sia.core.cache import GovernanceCache
 
 
 class ContextualIngressOrchestrator:
@@ -10,16 +12,25 @@ class ContextualIngressOrchestrator:
     EU AI Act governance gates via the RuleEvaluationEngine.
     """
 
-    def __init__(self, rule_engine: RuleEvaluationEngine, governance_adapter=None):
+    def __init__(self, rule_engine: RuleEvaluationEngine, governance_adapter=None, cache_size: int = 1000):
         self.rule_engine = rule_engine
-        # Initialize classifier with optional LLM adapter for high-intelligence mode
         self.classifier = IntentClassifier(
             use_llm=governance_adapter is not None,
             model_adapter=governance_adapter
         )
         self.sanitizer = DataSanitizer()
+        self.cache = GovernanceCache(max_size=cache_size)
+
+    def _get_prompt_hash(self, prompt: str) -> str:
+        return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
     def process_prompt(self, prompt: str) -> Dict[str, Any]:
+        # --- 0. CACHE LOOKUP ---
+        prompt_hash = self._get_prompt_hash(prompt)
+        cached_result = self.cache.get(prompt_hash)
+        if cached_result:
+            return cached_result
+
         # 1. Advanced Intent Classification (Hybrid)
         intent = self.classifier.classify(prompt)
 
@@ -48,7 +59,7 @@ class ContextualIngressOrchestrator:
                 "requires_human_review": False,
             }
 
-        return {
+        res = {
             "allowed": True,
             "requires_human_review": eval_result["requires_human_review"],
             "trigger_paragraph": eval_result.get("trigger_paragraph"),
@@ -58,3 +69,7 @@ class ContextualIngressOrchestrator:
             "original_prompt": prompt,
             "pii_detected": contains_pii,
         }
+        
+        # Cache the result
+        self.cache.set(self._get_prompt_hash(prompt), res)
+        return res
