@@ -1,32 +1,33 @@
 import yaml
 from pydantic import BaseModel, Field
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Any
 from pathlib import Path
 
-class GovernanceRule(BaseModel):
-    """
-    Represents a single rule within the Governance-as-Code logic gate.
-    """
-    logic: Optional[str] = None
+class Rule(BaseModel):
+    logic: str
     on_fail: Optional[str] = None
-    context_match: Optional[str] = None
-    requirement: Optional[str] = None
-    description: Optional[str] = None
+    domains: Optional[List[str]] = None
+    retention_policy: Optional[str] = None
+    text: Optional[str] = None
+    applies_to_annex_iii: Optional[List[str]] = None
+    on_trigger: Optional[str] = None
+    min_confidence: Optional[float] = None
+    rewrite_template: Optional[str] = None
 
-class LogicGateConfig(BaseModel):
-    """
-    Represents the full YAML configuration for logic gates.
-    """
-    rules: Dict[str, GovernanceRule]
+class ArticleConfig(BaseModel):
+    description: str
+    rules: Dict[str, Rule]
 
-def load_logic_gates(file_path: str | Path) -> LogicGateConfig:
-    """
-    Loads and validates the Governance YAML configuration using Pydantic.
-    """
+class Environments(BaseModel):
+    active: List[str]
+
+class EUAIActConfig(BaseModel):
+    environments: Environments
+    annex_iii_categories: Dict[str, List[str]]
+    articles: Dict[str, ArticleConfig]
+
+def load_logic_gates(file_path: str | Path) -> EUAIActConfig:
     with open(file_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     
-    if not data:
-        return LogicGateConfig(rules={})
-        
-    return LogicGateConfig(rules={k: GovernanceRule(**v) for k, v in data.items()})
+    return EUAIActConfig(**data)

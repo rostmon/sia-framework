@@ -33,8 +33,8 @@
 - `[x]` End-to-End run verification.
 
 ## Phase 5: EU AI Act Governance-as-Code Translation
-- `[ ]` Create comprehensive `configs/eu_ai_act_full.yaml` with per-environment granularity and Annex III categorization.
-- `[ ]` Expand `src/sia/core/config.py` Pydantic models for nested Article/Annex tracking.
-- `[ ]` Upgrade `src/sia/core/engine.py` to evaluate new rules.
-- `[ ]` Update Ingress/Egress layers and FastAPI route to support HTTP 202 Accepted for Human Signature (HITL).
-- `[ ]` Update `test_poc.py` to demonstrate the new EU AI Act schema.
+- `[x]` Create comprehensive `configs/eu_ai_act_full.yaml` with per-environment granularity and Annex III categorization.
+- `[x]` Expand `src/sia/core/config.py` Pydantic models for nested Article/Annex tracking.
+- `[x]` Upgrade `src/sia/core/engine.py` to evaluate new rules.
+- `[x]` Update Ingress/Egress layers and FastAPI route to support HTTP 202 Accepted for Human Signature (HITL).
+- `[x]` Update `test_poc.py` to demonstrate the new EU AI Act schema.

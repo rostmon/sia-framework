@@ -1,7 +1,5 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel
-import time
-
 from sia.core.config import load_logic_gates
 from sia.core.engine import RuleEvaluationEngine
 from sia.ingress.orchestrator import ContextualIngressOrchestrator
@@ -9,54 +7,55 @@ from sia.traceability.extractor import ReasoningExtractor
 from sia.traceability.ledger import AuditLedger
 from sia.egress.validator import DeterministicEgressValidator
 
-# Setup core components
-config = load_logic_gates("configs/sia_logic_gate.yaml")
-rule_engine = RuleEvaluationEngine(config)
+config = load_logic_gates("configs/eu_ai_act_full.yaml")
+rule_engine = RuleEvaluationEngine(config, environment="prod")
 ingress = ContextualIngressOrchestrator(rule_engine)
 extractor = ReasoningExtractor()
 ledger = AuditLedger()
 egress = DeterministicEgressValidator()
 
-app = FastAPI(
-    title="Sovereign Systemic Integrity Architecture (SIA)",
-    description="Governance-as-Code Middleware API"
-)
+app = FastAPI(title="Sovereign Systemic Integrity Architecture (SIA)")
 
 class ChatRequest(BaseModel):
     prompt: str
-    # other standard OpenAI-like params can go here
 
 class ChatResponse(BaseModel):
     output: str
-    signature_hash: str
+    signature_hash: Optional[str] = None
+    status: str
 
-@app.post("/v1/chat/completions", response_model=ChatResponse)
-async def chat_completion(request: ChatRequest):
-    """
-    SIA Proxy / Middleware interface.
-    Intercepts the request, processes it through the Sovereign Stack,
-    and returns a verified output.
-    """
+@app.post("/v1/chat/completions")
+async def chat_completion(request: ChatRequest, response: Response):
     # 1. Ingress - Contextual Firewall
     ingress_result = ingress.process_prompt(request.prompt)
     if not ingress_result["allowed"]:
         raise HTTPException(status_code=403, detail=ingress_result["reason"])
 
+    # Article 14: Human-in-the-loop (HITL) Gate
+    if ingress_result.get("requires_human_review"):
+        response.status_code = 202
+        return {
+            "status": "HTTP 202 Accepted - Human Review Required",
+            "message": "This request falls under Annex III High-Risk categorization and requires a mandatory human signature before proceeding.",
+            "review_url": "https://sia.internal/review/queue/12345"
+        }
+
     sanitized_prompt = ingress_result["sanitized_prompt"]
 
-    # 2. Primary Engine (Mock LLM Call)
-    # In production, this proxies the call to OpenAI, Anthropic, or local LLM.
-    # We use a simulated LLM execution for PoC.
+    # 2. Mock LLM Call
     llm_output_text = "Here is the response. SIA uses Governance-as-Code."
     llm_reasoning = "<thought> I should mention Governance-as-Code. </thought>"
 
     # 3. Egress - Deterministic Validator
-    verified_output = egress.validate(llm_output_text)
+    # We pass the engine to validate Article 13 & 15
+    is_compliant, verified_output, watermark = rule_engine.evaluate_egress(llm_output_text, confidence=0.9)
+    
+    if watermark:
+        verified_output += f"\n\n[Transparency]: {watermark}"
 
     # 4. Traceability - Forensic Ledger
     reasoning_path = extractor.extract({"content": llm_reasoning})
-    # We grab the compliance score heuristically from the signature logic in PoC
-    compliance_score = 0.9 if "COMPLIANT" in verified_output else 0.0
+    compliance_score = 0.9 if is_compliant else 0.0
     
     signature_hash = ledger.record_trace(
         prompt=request.prompt,
@@ -66,7 +65,7 @@ async def chat_completion(request: ChatRequest):
         compliance_score=compliance_score
     )
 
-    return ChatResponse(output=verified_output, signature_hash=signature_hash)
+    return {"output": verified_output, "signature_hash": signature_hash, "status": "COMPLETED"}
 
 if __name__ == "__main__":
     import uvicorn
