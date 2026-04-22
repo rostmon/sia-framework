@@ -1,0 +1,65 @@
+# ─── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# ─── Build / Distribution ─────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ─── Virtual Environments ─────────────────────────────────────
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# ─── Secrets & Keys (NEVER commit) ───────────────────────────
+.env.local
+.env.*.local
+secrets.yaml
+*.key
+*.pem
+
+# ─── Runtime Logs & Audit Data ───────────────────────────────
+# The audit ledger is sensitive operational data, not source code.
+# Provide logs/ directory structure via logs/.gitkeep instead.
+logs/*.jsonl
+logs/*.json
+logs/*.log
+reports/*.md
+reports/*.html
+cert_demo/*.json
+cert_demo/*.md
+
+# ─── Conformity State (runtime state, not source) ────────────
+logs/conformity_state.json
+
+# ─── IDE & OS ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Test Artifacts ───────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# ─── Jupyter ──────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── Miscellaneous ────────────────────────────────────────────
+*.bak
+*.tmp
+demo_project/
+project_management/

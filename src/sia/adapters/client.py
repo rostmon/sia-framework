@@ -30,6 +30,7 @@ class SIAResponse:
     provider: str
     confidence: float
     http_status: int                         # Standard HTTP code reflecting governance outcome
+    risk_score: float = 0.0                  # Quantified compliance risk (0-100)
     http_headers: Dict[str, str] = field(default_factory=dict)  # e.g. X-SIA-AI-Generated
 
 
@@ -159,6 +160,7 @@ class SIAClient:
             provider=self._adapter.provider_name,
             confidence=0.0,
             http_status=http_status,
+            risk_score=ingress_result.get("risk_score", 100.0)
         )
 
     def _handle_veto(self, prompt: str, ingress_result: Dict) -> SIAResponse:
@@ -182,6 +184,7 @@ class SIAClient:
             provider=self._adapter.provider_name,
             confidence=0.0,
             http_status=202,
+            risk_score=ingress_result.get("risk_score", 100.0)
         )
 
     def _process_egress(self, prompt: str, ingress_result: Dict, model_response: Any, rag_metadata: Optional[Dict]) -> SIAResponse:
@@ -222,6 +225,7 @@ class SIAClient:
             confidence=model_response.confidence,
             http_status=final_status,
             http_headers=http_headers,
+            risk_score=ingress_result.get("risk_score", 0.0)
         )
 
 

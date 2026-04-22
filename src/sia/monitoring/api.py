@@ -183,4 +183,4 @@ Below is a sampled audit trail of the most recent cryptographic signatures ancho
 
 
 if __name__ == "__main__":
-    uvicorn.run("sia.monitoring.api:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8015)
