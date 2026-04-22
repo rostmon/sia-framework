@@ -14,9 +14,9 @@
 - `[x]` Implement Pre-emptive Veto logic.
 
 ### Module 2: Forensic Traceability Engine
-- `[ ]` Implement Reasoning-Path Extraction capture.
-- `[ ]` Implement Cryptographic Anchoring (`hashlib`).
-- `[ ]` Implement Audit Ledger (SQLite/PostgreSQL integration).
+- `[x]` Implement Reasoning-Path Extraction capture.
+- `[x]` Implement Cryptographic Anchoring (`hashlib`).
+- `[x]` Implement Audit Ledger (SQLite/PostgreSQL integration).
 
 ### Module 3: Deterministic Egress Validator
 - `[ ]` Implement Fact & RAG Verification stub.
