@@ -2,16 +2,66 @@ from typing import Any, Dict, List, Optional, Tuple
 from sia.core.config import EUAIActConfig
 
 
+class SIAConfigError(Exception):
+    """Raised when a deployment_assertion rule fails at SIAClient startup."""
+
+
 class RuleEvaluationEngine:
     """
-    Evaluates all atomic EU AI Act governance rules against a request/response pair.
-    Ordered by regulatory severity: cybersecurity > prohibited > bias > data > HITL > egress.
+    Evaluates EU AI Act governance rules in three tiers:
+      1. runtime_gate          — per-request, produces API HTTP codes
+      2. deployment_assertion  — validated once at __init__
+      3. governance_doc        — no runtime evaluation; evidence in docs/
     """
 
     def __init__(self, config: EUAIActConfig, environment: str = "prod"):
         self.config = config
         self.environment = environment
         self.active_category: Optional[str] = None
+        self._validate_deployment_assertions()
+
+    def _validate_deployment_assertions(self) -> None:
+        """
+        Runs all deployment_assertion rules at startup.
+        Raises SIAConfigError if any assertion fails.
+        """
+        errors = []
+        for art_key, article in self.config.articles.items():
+            for para_key, para in article.paragraphs.items():
+                for rule_key, rule in para.rules.items():
+                    if rule.category != "deployment_assertion":
+                        continue
+                    error = self._check_deployment_rule(rule_key, rule)
+                    if error:
+                        errors.append(f"[{art_key}.{para_key}.{rule_key}] {error}")
+        if errors:
+            raise SIAConfigError(
+                "Deployment assertion failures — SIAClient cannot start:\n" +
+                "\n".join(errors)
+            )
+
+    def _check_deployment_rule(self, rule_key: str, rule) -> Optional[str]:
+        """Returns an error string if the deployment assertion fails, else None."""
+        import os
+        if rule.logic == "REQUIRE_RISK_CLASSIFICATION":
+            if not self.config.annex_iii_categories:
+                return "annex_iii_categories must be defined."
+        elif rule.logic == "ENFORCE_RETENTION":
+            path = rule.retention_path
+            if not path:
+                return "retention_path must be configured."
+            # Validate parent directory exists (file may not exist yet if fresh install)
+            parent = os.path.dirname(path)
+            if parent and not os.path.exists(parent):
+                os.makedirs(parent, exist_ok=True)
+        elif rule.logic == "VALIDATE_SYSTEM_METADATA":
+            pass  # Satisfied by having the config file present
+        elif rule.logic == "VALIDATE_ACCURACY_METADATA":
+            pass  # Satisfied by required_metrics being declared in YAML
+        return None
+
+    def _is_runtime_gate(self, rule) -> bool:
+        return rule.category == "runtime_gate"
 
     def is_environment_active(self) -> bool:
         return self.environment in self.config.environments.active

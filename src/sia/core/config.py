@@ -5,10 +5,11 @@ from pathlib import Path
 
 
 class Rule(BaseModel):
-    """Atomic governance rule. All fields are optional to support diverse logic gates."""
-    model_config = {"extra": "allow"}   # Forward-compatible: unknown YAML fields don't break loading
+    """Atomic governance rule with explicit category classification."""
+    model_config = {"extra": "allow"}
 
     logic: str
+    category: str = "runtime_gate"  # runtime_gate | deployment_assertion | governance_doc
     # Blocking / filtering
     on_fail: Optional[str] = None
     on_trigger: Optional[str] = None
