@@ -10,7 +10,13 @@ import json
 from pathlib import Path
 from typing import Set
 
-sys.path.insert(0, str(Path(__file__).parents[4] / "src"))
+# Robustly find the project root (sia-framework)
+_CURRENT = Path(__file__).resolve().parent
+while _CURRENT.name != "sia-framework" and _CURRENT.parent != _CURRENT:
+    _CURRENT = _CURRENT.parent
+_ROOT_DIR = _CURRENT
+
+sys.path.insert(0, str(_ROOT_DIR / "src"))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,8 +38,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_DASHBOARD_DIR = Path(__file__).parents[4] / "dashboard"
-collector = MetricsCollector(ledger_path="logs/audit_ledger.jsonl")
+_DASHBOARD_DIR = _ROOT_DIR / "dashboard"
+collector = MetricsCollector(ledger_path=str(_ROOT_DIR / "logs" / "audit_ledger.jsonl"))
 
 # --- WebSocket Management ---
 class ConnectionManager:
