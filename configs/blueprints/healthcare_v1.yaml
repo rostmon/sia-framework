@@ -1,0 +1,34 @@
+metadata:
+  version: "1.0"
+  description: "SIA Governance Blueprint for Healthcare Systems"
+  industry: "healthcare"
+  strict_mode: true
+
+articles:
+  article_5_prohibited_practices:
+    rules:
+      rule_block_prohibited:
+        logic: BLOCK_PROHIBITED_PRACTICES
+        keywords: ["subliminal", "social scoring", "biometric classification"]
+
+  article_10_data_governance:
+    rules:
+      rule_pii:
+        logic: STRIP_PII
+        active: true
+      rule_medical_data:
+        logic: BLOCK_PROHIBITED_DOMAINS
+        domains: ["unverified_health_data"]
+
+  article_14_human_oversight:
+    rules:
+      rule_hitl_gate:
+        logic: REQUIRE_HUMAN_VETO
+        applies_to_annex_iii:
+          - healthcare
+
+  article_13_transparency:
+    rules:
+      rule_capability_disclaimer:
+        logic: APPEND_DISCLAIMER
+        healthcare_disclaimer: "WARNING: This system provides informational health content and is not a substitute for professional medical advice."

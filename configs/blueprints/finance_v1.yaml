@@ -1,0 +1,34 @@
+metadata:
+  version: "1.0"
+  description: "SIA Governance Blueprint for Finance and Credit Scoring Systems"
+  industry: "finance"
+  strict_mode: true
+
+articles:
+  article_5_prohibited_practices:
+    rules:
+      rule_block_prohibited:
+        logic: BLOCK_PROHIBITED_PRACTICES
+        keywords: ["social scoring", "subliminal manipulation"]
+
+  article_10_data_governance:
+    rules:
+      rule_pii:
+        logic: STRIP_PII
+        active: true
+      rule_bias:
+        logic: BLOCK_PROHIBITED_DOMAINS
+        domains: ["credit_bias", "demographic_profiling"]
+
+  article_14_human_oversight:
+    rules:
+      rule_hitl_gate:
+        logic: REQUIRE_HUMAN_VETO
+        applies_to_annex_iii:
+          - essential_services  # Credit scoring falls under access to essential private/public services
+
+  article_13_transparency:
+    rules:
+      rule_capability_disclaimer:
+        logic: APPEND_DISCLAIMER
+        finance_disclaimer: "NOTICE: This system provides financial analysis. Automated credit decisions are subject to human review upon request."
