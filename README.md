@@ -1,2 +1,67 @@
-# sia-framework
-SIA is a Governance-as-Code framework for the EU AI Act. It uses a Zero-Trust Supervisory Middleware with three layers: Ingress Guard, Forensic Ledger, and Egress Validator. SIA converts legal prose into binary YAML logic to ensure AI is provably correct, legally sovereign, and factually grounded. Compliance is a runtime reality, not a checklist.
+# Sovereign Systemic Integrity Architecture (SIA)
+
+**SIA** is a professional **Governance-as-Code (GaC)** framework designed to bridge the gap between probabilistic AI engines and deterministic regulatory requirements, such as the **EU AI Act**.
+
+Unlike standard AI safety layers that rely on "soft" prompt engineering, SIA implements a **Sovereign Oversight Layer**—a deterministic gate that intercepts, audits, and validates AI outputs against binary logic gates at the runtime level.
+
+---
+
+## ⚖️ Strategic Context
+
+### 1. The Problem: The Black Box Paradox
+Modern enterprise AI is fundamentally undermined by **Systemic Drift**. Because Large Language Models operate on probabilistic weights rather than deterministic logic, they lack the structural reliability required for mission-critical environments. This "Black Box" nature creates a high-velocity liability gap: the inherent mismatch between stochastic AI outputs and rigid legal requirements poses an existential risk to critical infrastructure and organizational sovereignty.
+
+### 2. The Objective: Engineering Regulatory Sovereignty 
+The SIA Framework establishes a **Sovereign Oversight Layer**, acting as a deterministic gate between probabilistic AI engines and operational execution. By strategically decoupling cognitive intelligence from systemic governance, SIA installs a **Technical Conformity Controller** that ensures AI operations are provably compliant, legally sovereign, and factually grounded at the runtime level.
+
+---
+
+## 📜 The SIA Manifest: The Sovereign Pentad
+
+The SIA framework is governed by these **5 First Principles of Systemic Integrity**:
+
+1.  **Deterministic Transparency:** Opacity is a technical defect. All reasoning paths must be human-interpretable, audit-ready, and decoupled from the probabilistic noise of the primary engine.
+2.  **The Human Veto:** Autonomy is a delegated function, never a surrendered right. Absolute oversight is the non-negotiable anchor of the system; the human agent remains the final authority in the decision loop.
+3.  **Algorithmic Truth:** Accuracy is prioritized over "helpfulness." Factuality is the ultimate metric of systemic health, enforced through real-time verification and a zero-tolerance policy for hallucinations.
+4.  **Radical Data Hygiene:** Excising bias and cognitive erosion at the root. Technical conformity is impossible without the surgical sanitation of data and the preservation of systemic integrity at the source.
+5.  **Antifragile Resilience:** Security is a continuous stress-test, not a static checkbox. The system must evolve through adversarial validation, identifying and neutralizing systemic drift before it manifests as operational failure.
+
+---
+
+## 🛡️ Architecture: The Sovereign Stack
+
+The SIA wraps the primary AI engine in a **Zero-Trust Supervisory Mesh** consisting of three specialized orchestration layers:
+
+### 1. Contextual Ingress Orchestrator
+The **Cognitive Firewall** of the system. It performs real-time semantic analysis to ensure the system remains within defined operational boundaries.
+* **Intent Classification:** Categorizes requests according to EU AI Act Risk Tiers.
+* **Data Sanitization:** Automated PII stripping and injection of Sovereign YAML policy constraints.
+* **Pre-emptive Veto:** Instant termination of sessions involving prohibited practices or unauthorized domains.
+
+### 2. Forensic Traceability Engine
+A high-integrity sidecar process that monitors the internal "Chain of Thought" to satisfy the documentation mandates of **Annex IV**.
+* **Reasoning-Path Extraction:** Decouples the logic used by the AI from the final response for total transparency.
+* **Cryptographic Anchoring:** Hashes the reasoning path and compliance score into an immutable ledger for regulatory audits.
+* **Technical File Generation:** Automated compilation of audit trails required for High-Risk system certification.
+
+### 3. Deterministic Egress Validator
+The final **Semantic Integrity Gate**. It applies the **Truth Razor** to every output, anchoring probabilistic generations in deterministic facts.
+* **RAG-Grounded Verification:** Cross-references outputs against Authorized Truth-Centers (Proprietary DBs or Clinical Gold Standards).
+* **Hallucination Filter:** A zero-tolerance logic gate that blocks and rewrites outputs lacking a verifiable confidence score.
+* **Integrity Certification:** Appends a machine-readable compliance signature to the output, verifying all Sovereign Pentad checks.
+
+---
+
+## 🛠️ Implementation: Governance-as-Code (GaC)
+
+SIA translates legal prose into binary logic gates. This ensures that compliance is a **runtime reality**, not a post-hoc checklist.
+
+```yaml
+# configs/sia_logic_gate.yaml
+article_15_accuracy:
+  logic: "RAG_VERIFY(output.facts) == true"
+  on_fail: BLOCK_AND_REWRITE
+
+article_06_high_risk:
+  context_match: "TASK(clinical_triage) OR TASK(resume_scoring)"
+  requirement: "MANDATORY_HUMAN_SIGNATURE"
