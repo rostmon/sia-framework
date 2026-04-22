@@ -90,6 +90,61 @@ class SIAClient:
         # --- 3. EGRESS & TRACE ---
         return self._process_egress(prompt, ingress_result, model_response, rag_metadata)
 
+    async def astream(self, prompt: str, rag_metadata: Optional[Dict] = None, **model_kwargs):
+        """Asynchronous streaming governed chat."""
+        # --- 1. INGRESS ---
+        ingress_result = self._ingress.process_prompt(prompt)
+        if not ingress_result["allowed"]:
+            blocked_response = self._handle_blocked(prompt, ingress_result)
+            yield blocked_response.content
+            return
+        if ingress_result.get("requires_human_review"):
+            veto_response = self._handle_veto(prompt, ingress_result)
+            yield veto_response.content
+            return
+
+        # --- 2. MODEL CALL (STREAM) ---
+        accumulated_content = ""
+        
+        async for chunk in self._adapter.astream(ingress_result["sanitized_prompt"], **model_kwargs):
+            accumulated_content += chunk
+            
+            # Mid-stream egress scan
+            is_compliant, _, watermark, _ = self._engine.evaluate_egress(
+                accumulated_content, confidence=0.9, rag_verified=True, rag_metadata=rag_metadata
+            )
+            
+            if not is_compliant:
+                intercept_msg = "\n\n[SIA INTERCEPTED] Generated stream violated compliance rules and was halted."
+                yield intercept_msg
+                self._ledger.record_trace(
+                    prompt=prompt,
+                    sanitized_prompt=ingress_result["sanitized_prompt"],
+                    reasoning_path={},
+                    output=accumulated_content + intercept_msg,
+                    compliance_score=0.0
+                )
+                return
+                
+            yield chunk
+
+        # --- 3. END OF STREAM (Transparency & Trace) ---
+        is_compliant, _, watermark, _ = self._engine.evaluate_egress(
+            accumulated_content, confidence=0.9, rag_verified=True, rag_metadata=rag_metadata
+        )
+        
+        if watermark:
+             yield f"\n\n[Transparency]: {watermark}"
+             
+        self._ledger.record_trace(
+            prompt=prompt,
+            sanitized_prompt=ingress_result["sanitized_prompt"],
+            reasoning_path={},
+            output=accumulated_content + (f"\n\n[Transparency]: {watermark}" if watermark else ""),
+            compliance_score=0.9
+        )
+
+
     def _handle_blocked(self, prompt: str, ingress_result: Dict) -> SIAResponse:
         trigger = ingress_result.get("trigger_paragraph")
         http_status = ingress_result.get("http_status") or 403
@@ -181,7 +236,51 @@ def governed(client: SIAClient, rag_metadata: Optional[Dict] = None, rag_verifie
         rag_verified: Whether the output should be considered grounded. Default True.
     """
     def decorator(func: Callable[..., Any]):
-        if inspect.iscoroutinefunction(func):
+        if inspect.isasyncgenfunction(func):
+            @functools.wraps(func)
+            async def async_gen_wrapper(prompt: str, *args, **kwargs):
+                ingress_result = client._ingress.process_prompt(prompt)
+                if not ingress_result["allowed"]:
+                    yield client._handle_blocked(prompt, ingress_result).content
+                    return
+                if ingress_result.get("requires_human_review"):
+                    yield client._handle_veto(prompt, ingress_result).content
+                    return
+                
+                accumulated_content = ""
+                async for chunk in func(ingress_result["sanitized_prompt"], *args, **kwargs):
+                    accumulated_content += chunk
+                    is_compliant, _, _, _ = client._engine.evaluate_egress(
+                        accumulated_content, confidence=0.9, rag_verified=rag_verified, rag_metadata=rag_metadata
+                    )
+                    if not is_compliant:
+                        intercept_msg = "\n\n[SIA INTERCEPTED] Generated stream violated compliance rules and was halted."
+                        yield intercept_msg
+                        client._ledger.record_trace(
+                            prompt=prompt,
+                            sanitized_prompt=ingress_result["sanitized_prompt"],
+                            reasoning_path={},
+                            output=accumulated_content + intercept_msg,
+                            compliance_score=0.0
+                        )
+                        return
+                    yield chunk
+
+                is_compliant, _, watermark, _ = client._engine.evaluate_egress(
+                    accumulated_content, confidence=0.9, rag_verified=rag_verified, rag_metadata=rag_metadata
+                )
+                if watermark:
+                    yield f"\n\n[Transparency]: {watermark}"
+                    
+                client._ledger.record_trace(
+                    prompt=prompt,
+                    sanitized_prompt=ingress_result["sanitized_prompt"],
+                    reasoning_path={},
+                    output=accumulated_content + (f"\n\n[Transparency]: {watermark}" if watermark else ""),
+                    compliance_score=0.9
+                )
+            return async_gen_wrapper
+        elif inspect.iscoroutinefunction(func):
             @functools.wraps(func)
             async def async_wrapper(prompt: str, *args, **kwargs):
                 # 1. Ingress

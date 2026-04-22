@@ -32,3 +32,11 @@ class MockAdapter(ModelAdapter):
         import asyncio
         await asyncio.sleep(0.01)  # Simulate network latency
         return self.generate(prompt, **kwargs)
+
+    async def astream(self, prompt: str, **kwargs):
+        import asyncio
+        words = self.mock_content.split(" ")
+        for i, word in enumerate(words):
+            await asyncio.sleep(0.01)
+            # yield chunk
+            yield word + (" " if i < len(words) - 1 else "")

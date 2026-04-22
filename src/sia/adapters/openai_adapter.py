@@ -74,3 +74,21 @@ class OpenAIAdapter(ModelAdapter):
             **kwargs,
         )
         return self._process_response(raw)
+
+    async def astream(self, prompt: str, **kwargs):
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            raise ImportError("OpenAI SDK not installed. Run: pip install openai>=1.0")
+
+        client = AsyncOpenAI(api_key=self._api_key)
+        stream = await client.chat.completions.create(
+            model=self._model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True,
+            **kwargs,
+        )
+        async for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content is not None:
+                yield content

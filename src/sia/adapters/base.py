@@ -49,3 +49,11 @@ class ModelAdapter(ABC):
     @abstractmethod
     async def agenerate(self, prompt: str, **kwargs) -> ModelResponse:
         """Asynchronous version of generate()."""
+
+    @abstractmethod
+    async def astream(self, prompt: str, **kwargs):
+        """
+        Asynchronous streaming version of generate().
+        Yields chunks of the response.
+        """
+        yield
