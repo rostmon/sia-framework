@@ -19,9 +19,9 @@
 - `[x]` Implement Audit Ledger (SQLite/PostgreSQL integration).
 
 ### Module 3: Deterministic Egress Validator
-- `[ ]` Implement Fact & RAG Verification stub.
-- `[ ]` Implement Truth Razor (Hallucination Filter) and `BLOCK_AND_REWRITE` mechanism.
-- `[ ]` Implement Integrity Signature appending.
+- `[x]` Implement Fact & RAG Verification stub.
+- `[x]` Implement Truth Razor (Hallucination Filter) and `BLOCK_AND_REWRITE` mechanism.
+- `[x]` Implement Integrity Signature appending.
 
 ## Phase 3: Integration & API Layer
 - `[ ]` Create SIA Proxy/Middleware interface.
