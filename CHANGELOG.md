@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0] — 2026-04-22 — Initial Public Release
+## [0.1.1] — 2026-05-05
+
+### Added
+- **ISO 14971 Risk Management Module** — Full architectural separation of hazard assessment from operational rules.
+- `configs/iso_14971_hazards.yaml` — Centralized hazard registry for 21 identified failure modes.
+- `src/sia/cli/generate_risk_report.py` — Automated ISO 14971 Risk Management Report generator.
+- **Dynamic Post-Market Monitoring (PMM)** — Automatic tracing of runtime incidents to specific Hazard IDs in compliance reports.
+- `/report/iso14971` endpoint — On-demand compliance evidence generation for regulators.
+
+### Changed
+- Refactored `eu_ai_act_full.yaml` to strip static hazard metadata, improving runtime rule evaluation performance.
+- Updated Monitoring Dashboard to include one-click access to the new Risk Management Report.
++
++---
++
++## [0.1.0] — 2026-04-22 — Initial Public Release
 
 ### 🎉 Phase 5 Complete — Full EU AI Act Conformity Lifecycle
 

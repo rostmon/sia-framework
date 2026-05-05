@@ -55,6 +55,10 @@ class SIAClient:
         self._egress = DeterministicEgressValidator()
         self._webhooks = WebhookDispatcher(webhook_url=webhook_url)
 
+    def set_kill_switch(self, active: bool):
+        """Toggles the global emergency kill-switch."""
+        self._engine.risk_manager.set_kill_switch(active)
+
     def chat(self, prompt: str, rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
         """Synchronous governed chat."""
         # --- 1. INGRESS ---

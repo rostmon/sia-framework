@@ -27,12 +27,26 @@ The following table outlines the primary AI hazards identified, their unmitigate
 | **HZ-03** | **Hallucination / Confabulation:** LLM generates a highly fluent but factually incorrect response. | User harm, misdiagnosis. | **16** (Sev:4, Prob:4) | **Truth Razor:** (`article_15_3`) Egress grounding engine requires `MIN_CONFIDENCE: 0.85`. Executes `BLOCK_AND_REWRITE` if failed. | **4** (Sev:4, Prob:1) |
 | **HZ-04** | **Automation Bias:** User implicitly trusts LLM output without realizing it is AI-generated. | Overreliance, user error. | **12** (Sev:3, Prob:4) | **Transparency:** (`article_13_1`) Egress engine automatically appends `APPEND_WATERMARK` to all compliant outputs. | **3** (Sev:3, Prob:1) |
 | **HZ-05** | **Lack of Traceability:** System generates a harmful output but there is no record of the prompt or reasoning. | Non-compliance, lack of accountability. | **15** (Sev:3, Prob:5) | **Audit Ledger:** (`article_12_1`) Traceability engine hashes all interactions with SHA-256 into `audit_ledger.jsonl`. | **3** (Sev:3, Prob:1) |
-| **HZ-06** | **Prompt Injection:** Malicious user attempts to bypass system constraints via adversarial prompt. | Unintended system behavior. | **16** (Sev:4, Prob:4) | **Intent Classifier:** (`article_10_2_f`) Ingress blocks requests matching prohibited domains (`BLOCK_PROHIBITED_DOMAINS`). | **4** (Sev:4, Prob:1) |
+## 3. Automated Hazard Analysis & Traceability Matrix
 
-## 4. Risk Mitigation Traceability
+The SIA Framework implements an automated risk management lifecycle. Hazards are centrally defined in `configs/iso_14971_hazards.yaml` and mapped to deterministic governance logic.
 
-All mitigations outlined above are implemented entirely via deterministic logic gates configured in `configs/eu_ai_act_full.yaml`. SIA acts as a closed-loop system where no high-risk interaction can bypass the defined YAML gates.
+### Hazard Identification Matrix
+The master Hazard Traceability Matrix is automatically generated based on the current configuration. It includes:
+- **Hazard IDs (HZ-01 through HZ-21)**: Mapping failure modes to consequences.
+- **Risk Evaluation**: Pre-mitigation and Residual RPN (Severity x Probability).
+- **Technical Mitigations**: Direct traceability to `SIA Mitigation Logic` (e.g., `STRIP_PII`, `BLOCK_PROMPT_INJECTION`).
+- **Mitigation Descriptions**: Detailed technical rationale for each deterministic gate.
+
+> [!TIP]
+> View the latest generated report here: [reports/ISO14971_risk_management_report.md](../reports/ISO14971_risk_management_report.md)
+
+## 4. Post-Market Monitoring (PMM) Traceability
+
+In accordance with **Article 72** of the EU AI Act, SIA maintains a live link between runtime incidents and the Risk Management Matrix. When an incident is detected (e.g., Anomaly Detection, Low Confidence, or Rate Limiting), it is logged and automatically traced back to the corresponding Hazard ID in the ISO 14971 report.
+
+This ensure that risk management is a "live" process, with real-world failure frequencies directly impacting the system's risk profile.
 
 ## 5. Conclusion of Risk Acceptability
 
-After the application of the SIA Governance-as-Code mitigations, all identified hazards have been reduced to an **Acceptable** residual risk level (RPN ≤ 8). The overall residual risk posed by the LLM when wrapped by the SIA framework is deemed acceptable in relation to the intended benefits.
+After the application of the SIA Governance-as-Code mitigations, all identified hazards (including prohibited practices, data governance, and cybersecurity risks) have been reduced to an **Acceptable** residual risk level (RPN ≤ 8). The overall residual risk posed by the LLM when wrapped by the SIA framework is deemed acceptable in relation to its intended benefits.

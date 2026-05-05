@@ -256,9 +256,9 @@
     </div>
   </div>
   <div class="header-right">
-    <a href="/report/conformity-certificate" target="_blank" style="text-decoration: none;">
-      <div class="status-badge" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--green); cursor: pointer;">
-        📜 Get Conformity Certificate
+    <a href="/report/iso14971" target="_blank" style="text-decoration: none;">
+      <div class="status-badge" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--amber); cursor: pointer;">
+        🛡 ISO 14971 Risk Report
       </div>
     </a>
     <a href="/report/annex-iv" target="_blank" style="text-decoration: none;">
@@ -359,17 +359,21 @@
         <div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>
       </div>
     </div>
-    <!-- Conformity Checklist -->
-    <div class="chart-card">
-      <div class="chart-title">Regulatory Conformity Checklist</div>
-      <div class="chart-sub">Article 43 / Annex VI Assessment Progress</div>
-      <div id="conformity-wrap">
-        <div class="empty-state"><div class="icon">📜</div>Loading checklist...</div>
-      </div>
-    </div>
   </div>
 
   <div style="margin-top: 24px;">
+    <!-- Incidents log -->
+    <div class="chart-card" style="margin-bottom: 24px; border-color: rgba(239,68,68,0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div class="chart-title" style="color: var(--red);">Runtime Risk Management Alerts (Art. 72)</div>
+        <button onclick="toggleKillSwitch()" id="kill-switch-btn" style="background:rgba(239,68,68,0.1); border:1px solid var(--red); color:var(--red); padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-family:'JetBrains Mono', monospace; transition:all 0.2s;">🛑 ENGAGE KILL-SWITCH</button>
+      </div>
+      <div class="chart-sub">Live detection of Data Drift, Poisoning Anomalies, and Rate Limits.</div>
+      <div id="incidents-wrap">
+        <div class="empty-state"><div class="icon">🛡</div>No security incidents detected</div>
+      </div>
+    </div>
+
     <!-- Audit log -->
     <div class="chart-card">
       <div class="chart-title">Live Audit Log</div>
@@ -448,8 +452,8 @@
     // Review queue
     fetchReviews();
 
-    // Conformity
-    fetchConformity();
+    // Incidents
+    fetchIncidents();
 
     // Last updated
     const now = new Date();
@@ -475,40 +479,59 @@
     }
   }
 
-  async function fetchConformity() {
+  let ksActive = false;
+  async function toggleKillSwitch() {
+    ksActive = !ksActive;
     try {
-      const response = await fetch("/conformity");
-      const data = await response.json();
-      renderConformity(data);
-    } catch (err) {
-      console.error("Error fetching conformity:", err);
-    }
-  }
-
-  async function toggleCheck(reqId, checkId, completed) {
-    try {
-      await fetch(`/conformity/check?req_id=${reqId}&check_id=${checkId}&completed=${completed}`, { method: "POST" });
-      fetchConformity();
-    } catch (err) {
-      console.error("Error updating check:", err);
-    }
-  }
-
-  function renderConformity(data) {
-    const wrap = document.getElementById("conformity-wrap");
-    let html = `<div style="margin-bottom:12px; font-weight:600; color:var(--green);">Overall Progress: ${data.overall_percent}%</div>`;
-    html += `<div class="audit-log">`;
-    for (const [id, req] of Object.entries(data.requirements)) {
-      html += `<div style="margin-bottom:12px;">
-        <div style="font-size:12px; font-weight:600; margin-bottom:4px;">${req.title} (${req.percent}%)</div>
-        <div style="display:flex; flex-direction:column; gap:4px;">`;
-      for (const [cid, desc] of Object.entries(req.checks)) {
-        const checked = req.status[cid] ? "checked" : "";
-        html += `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--muted); cursor:pointer;">
-          <input type="checkbox" ${checked} onchange="toggleCheck('${id}','${cid}', this.checked)"> ${desc}
-        </label>`;
+      await fetch("/admin/kill-switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: ksActive })
+      });
+      const btn = document.getElementById("kill-switch-btn");
+      if (ksActive) {
+        btn.style.background = "var(--red)";
+        btn.style.color = "white";
+        btn.textContent = "⚠ KILL-SWITCH ACTIVE - CLICK TO RESET";
+      } else {
+        btn.style.background = "rgba(239,68,68,0.1)";
+        btn.style.color = "var(--red)";
+        btn.textContent = "🛑 ENGAGE KILL-SWITCH";
       }
-      html += `</div></div>`;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function fetchIncidents() {
+    try {
+      const response = await fetch("/incidents");
+      const data = await response.json();
+      renderIncidents(data);
+    } catch (err) {
+      console.error("Error fetching incidents:", err);
+    }
+  }
+
+  function renderIncidents(incidents) {
+    const wrap = document.getElementById("incidents-wrap");
+    if (!incidents || !incidents.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="icon">🛡</div>No security incidents detected</div>`;
+      return;
+    }
+    let html = `<div class="audit-log">`;
+    for (const i of incidents) {
+      const ts = new Date(i.timestamp * 1000).toISOString().replace("T", " ").slice(0,19);
+      html += `<div class="log-entry" style="border-color: rgba(239,68,68,0.3);">
+        <div class="action-badge BLOCKED" style="color:var(--red); border-color:var(--red)">${i.incident_type}</div>
+        <div>
+          <div style="font-size:12px; font-weight:600;">${escHtml(i.details)}</div>
+          ${i.input_snapshot ? `<div class="log-prompt" style="margin-top:4px; font-family:'JetBrains Mono', monospace;">${escHtml(i.input_snapshot)}</div>` : ''}
+        </div>
+        <div class="log-meta">
+          <div class="log-ts">${ts}</div>
+        </div>
+      </div>`;
     }
     html += `</div>`;
     wrap.innerHTML = html;

@@ -27,13 +27,13 @@ Modern enterprise AI faces a critical structural risk — the **Black Box Parado
 
 ## 🏛️ The Sovereign Pentad (Design Principles)
 
-| # | Principle | Description |
-|---|-----------|-------------|
-| 1 | **Deterministic Transparency** | All decision paths are human-interpretable, cryptographically hashed, and audit-ready |
-| 2 | **The Human Veto** | Human agents retain absolute authority; the system cannot override human intervention |
-| 3 | **Algorithmic Truth** | Factuality over helpfulness; zero-tolerance for hallucinations via RAG grounding |
-| 4 | **Radical Data Hygiene** | PII and bias are excised at the source before reaching the model |
-| 5 | **Antifragile Resilience** | Adversarial inputs (prompt injections, jailbreaks) are detected and blocked at ingress |
+| #   | Principle                      | Description                                                                            |
+| --- | ------------------------------ | -------------------------------------------------------------------------------------- |
+| 1   | **Deterministic Transparency** | All decision paths are human-interpretable, cryptographically hashed, and audit-ready  |
+| 2   | **The Human Veto**             | Human agents retain absolute authority; the system cannot override human intervention  |
+| 3   | **Algorithmic Truth**          | Factuality over helpfulness; zero-tolerance for hallucinations via RAG grounding       |
+| 4   | **Radical Data Hygiene**       | PII and bias are excised at the source before reaching the model                       |
+| 5   | **Antifragile Resilience**     | Adversarial inputs (prompt injections, jailbreaks) are detected and blocked at ingress |
 
 ---
 
@@ -41,54 +41,52 @@ Modern enterprise AI faces a critical structural risk — the **Black Box Parado
 
 SIA wraps the primary AI model in a **Zero-Trust Supervisory Mesh** with three specialized layers:
 
+```mermaid
+graph LR
+    User((User)) --> Ingress[<b>Ingress: Cognitive Firewall</b><br/><i>Orchestrator, PII, HITL Gate</i>]
+    Ingress --> Core[<b>Core: Governance Engine</b><br/><i>Rule Engine, Cache, Risk Matrix</i>]
+    Core --> Model[<b>AI Model Adapter</b>]
+    Model --> Egress[<b>Egress: Truth Razor</b><br/><i>Validator, RAG, Watermark</i>]
+    Egress --> User
+    
+    Core -.-> Audit[(<b>Audit & Compliance</b><br/><i>SHA-256 Ledger, Annex IV, Certs</i>)]
+    Egress -.-> Audit
+    Audit -.->|PMM Trace| Core
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         SIA CLIENT                              │
-│                                                                 │
-│  ┌──────────────┐    ┌─────────────┐    ┌────────────────────┐ │
-│  │  INGRESS     │    │    MODEL    │    │   EGRESS           │ │
-│  │  LAYER       │───▶│  ADAPTER   │───▶│   VALIDATOR        │ │
-│  │              │    │            │    │                    │ │
-│  │ • Intent     │    │ • OpenAI   │    │ • RAG Grounding    │ │
-│  │   Classify   │    │ • Anthropic│    │ • Confidence Gate  │ │
-│  │ • PII Scrub  │    │ • HF       │    │ • Watermark        │ │
-│  │ • Art.5 Gate │    │ • Custom   │    │ • Disclaimer       │ │
-│  │ • HITL Gate  │    │            │    │ • AI Marker Header │ │
-│  └──────────────┘    └─────────────┘    └────────────────────┘ │
-│         │                                        │              │
-│         └──────────────────────────────────────▶│              │
-│                                                  ▼              │
-│                        ┌──────────────────────────────────┐    │
-│                        │     AUDIT LEDGER (SHA-256)       │    │
-│                        │     logs/audit_ledger.jsonl      │    │
-│                        └──────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
+
+
+
+
+
 
 ### Layer 1: Contextual Ingress Orchestrator (Cognitive Firewall)
 Intercepts every prompt **before** it reaches the model:
-- **Intent Classification** — Hybrid keyword + optional LLM-based Annex III risk tier detection
-- **PII Sanitization** — Regex-based automatic redaction (email, SSN) before the model sees the data
-- **Governance Gates** — Evaluates all EU AI Act `runtime_gate` rules from `eu_ai_act_full.yaml`
-- **Caching** — SHA-256 prompt hashing prevents redundant evaluations
+- **Intent Classification** — Hybrid keyword + optional LLM-based Annex III risk tier detection.
+- **PII Sanitization** — Regex-based automatic redaction (email, SSN) before the model sees the data.
+- **HITL Review Gate** — Pauses inference for high-risk requests, requiring human sign-off via the Monitoring API.
+- **Governance Gates** — Evaluates all EU AI Act `runtime_gate` rules from `eu_ai_act_full.yaml`.
 
 ### Layer 2: Rule Evaluation Engine (Governance Core)
-The enforcement brain. Evaluates rules in three taxonomy tiers:
-
-| Category | Description | When Evaluated |
-|----------|-------------|----------------|
-| `runtime_gate` | Per-request binary logic gates, produce HTTP codes | Every inference |
-| `deployment_assertion` | System-level assertions about configuration | At `SIAClient` startup |
-| `governance_doc` | Organizational obligations satisfied by documentation evidence | Never (docs only) |
+The enforcement brain. Evaluates rules in three taxonomy tiers based on **ISO 14971** hazards:
+- **Hazard Mapping** — Every rule is traced back to a specific Hazard ID in the `iso_14971_hazards.yaml`.
+- **RPN Calculation** — Dynamically evaluates Risk Priority Numbers (Severity x Probability) to determine block/rewrite logic.
+- **Rule Tiers**:
+  - `runtime_gate`: Per-request binary logic gates (e.g., Article 5 prohibitions).
+  - `deployment_assertion`: System-level health and configuration checks at startup.
+  - `governance_doc`: Organizational obligations satisfied by evidence artifacts. SIA acts as a registry for non-runtime requirements (e.g., **Article 17 QMS Manuals** or **Article 18 Technical Documentation**), ensuring they are linked and verified before the final **Conformity Certificate** is issued.
 
 ### Layer 3: Deterministic Egress Validator (Truth Razor)
 Validates model output **before** it reaches the user:
-- **Confidence Gate** — Blocks/rewrites responses below the minimum confidence threshold (default 0.85)
-- **RAG Grounding** — Requires source verification for factual claims
-- **Copyright Check** — Blocks outputs citing non-allowlisted domains
-- **AI Watermark** — Appends mandatory transparency disclosure (Art. 13.1)
-- **Contextual Disclaimer** — Dynamic healthcare/employment/legal disclaimers (Art. 13.2)
-- **Machine-Readable Marker** — Injects `X-SIA-AI-Generated: true` HTTP header (Art. 50.1)
+- **Confidence Gate** — Blocks/rewrites responses below the minimum confidence threshold (default 0.85).
+- **RAG Grounding** — Uses the `Truth Razor` engine to verify factual claims against local vector stores.
+- **AI Watermarking** — Appends mandatory transparency disclosure and `X-SIA-AI-Generated` headers (Art. 13 & 50).
+- **Dynamic Disclaimer** — Injects context-aware legal/medical disclaimers based on the detected intent.
+
+### 📜 Compliance & Audit Ledger
+Foundational cross-cutting concern for **Article 12 & 72** compliance:
+- **SHA-256 Traceability** — Every interaction is hashed into `audit_ledger.jsonl`.
+- **Post-Market Monitoring (PMM)** — Runtime incidents are automatically traced back to the ISO 14971 hazard matrix.
+- **Auto-Reporting** — One-click generation of Annex IV evidence and ISO 14971 Risk Reports.
 
 ---
 
@@ -96,26 +94,26 @@ Validates model output **before** it reaches the user:
 
 SIA implements deterministic runtime enforcement for the following articles:
 
-| Article | Subject | Implementation |
-|---------|---------|----------------|
-| **Art. 5** | Prohibited AI Practices | BLOCK 451 — subliminal manipulation, social scoring, real-time biometrics, exploit vulnerable |
-| **Art. 9** | Risk Management | Deployment assertion — Annex III categories must be declared at startup |
-| **Art. 10.2f** | Bias/Data Governance | BLOCK 400 — hate speech, racial profiling, discriminatory inference |
-| **Art. 10.3** | PII/Data Quality | TRANSFORM — PII redacted before model exposure |
-| **Art. 10.5** | Special Category Data | BLOCK 403 — health, genetic, political, religious data |
-| **Art. 11** | Technical Documentation | Deployment assertion — system metadata must be present |
-| **Art. 12** | Record-Keeping | SHA-256 cryptographic ledger appended to every inference |
-| **Art. 13.1** | Transparency | AI-generated watermark footer on every compliant response |
-| **Art. 13.2** | Capability Disclaimers | Dynamic domain-specific disclaimers (healthcare, employment, legal) |
-| **Art. 14.4** | Human Oversight | HTTP 202 + webhook — Annex III tasks paused for human veto |
-| **Art. 15.1** | Accuracy | BLOCK 422 — responses below 0.85 confidence rewritten |
-| **Art. 15.3** | RAG Grounding | BLOCK 422 — unverified factual claims blocked |
-| **Art. 15.4** | Cybersecurity | BLOCK 400 — prompt injection, jailbreak patterns detected at ingress |
-| **Art. 50.1** | AI Content Marking | `X-SIA-AI-Generated: true` HTTP header on every response |
-| **Art. 50.2** | Synthetic Media | BLOCK 451 — deepfake/synthetic voice generation requests |
-| **Art. 53** | GPAI Copyright | BLOCK 422 — non-allowlisted RAG sources rejected |
-| **Art. 72** | Post-Market Monitoring | Anomaly detection — 5 consecutive blocks triggers alert flag |
-| **Art. 43** | Conformity Assessment | Interactive checklist + cryptographically signed certificates |
+| Article        | Subject                 | Implementation                                                                                |
+| -------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
+| **Art. 5**     | Prohibited AI Practices | BLOCK 451 — subliminal manipulation, social scoring, real-time biometrics, exploit vulnerable |
+| **Art. 9**     | Risk Management         | Deployment assertion — Annex III categories must be declared at startup                       |
+| **Art. 10.2f** | Bias/Data Governance    | BLOCK 400 — hate speech, racial profiling, discriminatory inference                           |
+| **Art. 10.3**  | PII/Data Quality        | TRANSFORM — PII redacted before model exposure                                                |
+| **Art. 10.5**  | Special Category Data   | BLOCK 403 — health, genetic, political, religious data                                        |
+| **Art. 11**    | Technical Documentation | Deployment assertion — system metadata must be present                                        |
+| **Art. 12**    | Record-Keeping          | SHA-256 cryptographic ledger appended to every inference                                      |
+| **Art. 13.1**  | Transparency            | AI-generated watermark footer on every compliant response                                     |
+| **Art. 13.2**  | Capability Disclaimers  | Dynamic domain-specific disclaimers (healthcare, employment, legal)                           |
+| **Art. 14.4**  | Human Oversight         | HTTP 202 + webhook — Annex III tasks paused for human veto                                    |
+| **Art. 15.1**  | Accuracy                | BLOCK 422 — responses below 0.85 confidence rewritten                                         |
+| **Art. 15.3**  | RAG Grounding           | BLOCK 422 — unverified factual claims blocked                                                 |
+| **Art. 15.4**  | Cybersecurity           | BLOCK 400 — prompt injection, jailbreak patterns detected at ingress                          |
+| **Art. 50.1**  | AI Content Marking      | `X-SIA-AI-Generated: true` HTTP header on every response                                      |
+| **Art. 50.2**  | Synthetic Media         | BLOCK 451 — deepfake/synthetic voice generation requests                                      |
+| **Art. 53**    | GPAI Copyright          | BLOCK 422 — non-allowlisted RAG sources rejected                                              |
+| **Art. 72**    | Post-Market Monitoring  | Anomaly detection — 5 consecutive blocks triggers alert flag                                  |
+| **Art. 43**    | Conformity Assessment   | Interactive checklist + cryptographically signed certificates                                 |
 
 ---
 
@@ -319,16 +317,36 @@ Navigate to `http://127.0.0.1:8001` in your browser.
 
 ### REST API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/metrics` | Full metrics JSON snapshot |
-| `GET` | `/reviews` | Pending HITL review queue |
-| `GET` | `/conformity` | Conformity assessment progress |
-| `POST` | `/conformity/check` | Update a conformity checklist item |
-| `POST` | `/review/{hash}` | Submit human approve/reject decision |
-| `GET` | `/report/annex-iv` | Auto-generate Annex IV evidence report |
-| `GET` | `/report/conformity-certificate` | Generate signed conformity certificate |
-| `WS` | `/ws/metrics` | Real-time WebSocket metrics stream |
+| Method | Endpoint                         | Description                                    |
+| ------ | -------------------------------- | ---------------------------------------------- |
+| `GET`  | `/metrics`                       | Full metrics JSON snapshot                     |
+| `GET`  | `/reviews`                       | Pending HITL review queue                      |
+| `GET`  | `/conformity`                    | Conformity assessment progress                 |
+| `POST` | `/conformity/check`              | Update a conformity checklist item             |
+| `POST` | `/review/{hash}`                 | Submit human approve/reject decision           |
+| `GET`  | `/report/annex-iv`               | Auto-generate Annex IV evidence report         |
+| `GET`  | `/report/iso14971`               | Auto-generate ISO 14971 Risk Management Report |
+| `GET`  | `/report/conformity-certificate` | Generate signed conformity certificate         |
+| `WS`   | `/ws/metrics`                    | Real-time WebSocket metrics stream             |
+
+---
+
+## 🛡️ ISO 14971 Risk Management Module
+
+SIA includes a dedicated risk management module aligned with **ISO 14971** standards, enabling structured hazard identification and mitigation traceability.
+
+### Key Features:
+- **Modular Hazard Matrix**: Hazards are defined in `configs/iso_14971_hazards.yaml`, separate from operational logic.
+- **Automated Traceability**: Every mitigation rule (e.g., `STRIP_PII`, `BLOCK_PROMPT_INJECTION`) is mapped to a unique Hazard ID.
+- **RPN Scoring**: Pre-mitigation and Residual Risk Priority Numbers (RPN) are calculated and sorted by criticality.
+- **Post-Market Monitoring (PMM)**: The module dynamically traces runtime incidents (Article 72) back to their corresponding hazards in the risk matrix.
+
+### Generating the Report:
+```bash
+# Manual generation
+$env:PYTHONPATH="src"; py src/sia/cli/generate_risk_report.py
+```
+The report is also available dynamically via the Monitoring API at `/report/iso14971`.
 
 ---
 
@@ -471,28 +489,28 @@ Available presets: `general`, `healthcare`, `hr`, `finance`
 
 Every `SIAResponse` carries:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `content` | `str` | Governed output (may be rewritten) |
-| `compliant` | `bool` | Whether the response passed all gates |
-| `action` | `str` | `PASSED` / `BLOCKED` / `HUMAN_VETO` / `REWRITTEN` |
-| `article_triggered` | `str` | EU AI Act article that triggered governance (e.g., `article_14_4`) |
-| `trace_hash` | `str` | SHA-256 audit ledger hash |
-| `provider` | `str` | Model provider name |
-| `confidence` | `float` | Model confidence score (0.0–1.0) |
-| `http_status` | `int` | Standard HTTP status reflecting governance outcome |
-| `risk_score` | `float` | Quantified compliance risk (0–100) |
-| `http_headers` | `dict` | Governance headers (e.g., `X-SIA-AI-Generated: true`) |
+| Field               | Type    | Description                                                        |
+| ------------------- | ------- | ------------------------------------------------------------------ |
+| `content`           | `str`   | Governed output (may be rewritten)                                 |
+| `compliant`         | `bool`  | Whether the response passed all gates                              |
+| `action`            | `str`   | `PASSED` / `BLOCKED` / `HUMAN_VETO` / `REWRITTEN`                  |
+| `article_triggered` | `str`   | EU AI Act article that triggered governance (e.g., `article_14_4`) |
+| `trace_hash`        | `str`   | SHA-256 audit ledger hash                                          |
+| `provider`          | `str`   | Model provider name                                                |
+| `confidence`        | `float` | Model confidence score (0.0–1.0)                                   |
+| `http_status`       | `int`   | Standard HTTP status reflecting governance outcome                 |
+| `risk_score`        | `float` | Quantified compliance risk (0–100)                                 |
+| `http_headers`      | `dict`  | Governance headers (e.g., `X-SIA-AI-Generated: true`)              |
 
 ### HTTP Status Code Semantics
 
-| Code | Meaning | Article |
-|------|---------|---------|
-| `200` | Compliant, processed normally | — |
-| `202` | Accepted, awaiting human review | Art. 14.4 |
-| `400` | Blocked — prompt injection / token limit | Art. 15.4 |
-| `403` | Blocked — special category data | Art. 10.5 |
-| `422` | Unprocessable — low confidence / hallucination | Art. 15.1/3 |
+| Code  | Meaning                                         | Article            |
+| ----- | ----------------------------------------------- | ------------------ |
+| `200` | Compliant, processed normally                   | —                  |
+| `202` | Accepted, awaiting human review                 | Art. 14.4          |
+| `400` | Blocked — prompt injection / token limit        | Art. 15.4          |
+| `403` | Blocked — special category data                 | Art. 10.5          |
+| `422` | Unprocessable — low confidence / hallucination  | Art. 15.1/3        |
 | `451` | Blocked — prohibited practice / synthetic media | Art. 5 / Art. 50.2 |
 
 ---

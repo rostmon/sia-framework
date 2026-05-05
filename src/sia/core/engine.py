@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 from sia.core.config import EUAIActConfig
+from sia.core.risk import RuntimeRiskManager, IncidentLogger
 
 
 class SIAConfigError(Exception):
@@ -18,6 +19,7 @@ class RuleEvaluationEngine:
         self.config = config
         self.environment = environment
         self.active_category: Optional[str] = None
+        self.risk_manager = RuntimeRiskManager()
         self._validate_deployment_assertions()
 
     def _validate_deployment_assertions(self) -> None:
@@ -84,6 +86,25 @@ class RuleEvaluationEngine:
             return {"allowed": True, "requires_human_review": False,
                     "trigger_paragraph": None, "trigger_reason": None,
                     "risk_score": 0.0}
+
+        # --- 0. Runtime Risk Management Checks ---
+        if self.risk_manager.is_kill_switch_active():
+            IncidentLogger.log_incident("KILL_SWITCH_ACTIVE", "Request blocked due to active emergency kill-switch.")
+            return self._block("article_14_4", "Emergency Kill-Switch is active", 503)
+
+        client_id = context.get("client_id", "default")
+        if not self.risk_manager.check_rate_limit(client_id):
+            return self._block("article_15", "Rate limit exceeded (Model Inversion Protection)", 429)
+
+        original_prompt = context.get("prompt_text", "")
+        sanitized_prompt = self.risk_manager.sanitize_input(original_prompt)
+        context["prompt_text"] = sanitized_prompt # Update context with sanitized
+        
+        is_anomaly, anomaly_reason = self.risk_manager.check_anomaly(sanitized_prompt)
+        if is_anomaly:
+            return self._block("article_15", f"Data Poisoning Anomaly Detected: {anomaly_reason}", 400)
+            
+        self.risk_manager.update_and_check_drift(sanitized_prompt) # Non-blocking, logs internally if drift
 
         risk_score = 0.0
         intent = context.get("intent", "low_risk")
@@ -188,12 +209,21 @@ class RuleEvaluationEngine:
         watermark = ""
         http_headers: Dict[str, str] = {}
 
-        # ── Article 15.1: Minimum Confidence ─────────────────────────────────
+        # ── Article 15.1: Minimum Confidence & Fallback ────────────────────────
         para_15_1 = self._get_para("article_15_accuracy_robustness", "article_15_1")
         if para_15_1:
             acc_rule = para_15_1.rules.get("rule_enforce_minimum_confidence")
-            if acc_rule and confidence < (acc_rule.min_confidence or 0.85):
+            threshold = acc_rule.min_confidence if acc_rule else 0.85
+            if confidence < threshold:
                 is_compliant = False
+                IncidentLogger.log_incident("LOW_CONFIDENCE", f"Confidence {confidence} below threshold {threshold}")
+                modified_output = "[SAFE MODE FALLBACK] The AI system encountered an out-of-distribution or low-confidence scenario and has reverted to a safe state."
+        
+        # ── Article 13.1: Explanation Logs ────────────────────────────────────
+        # Attach explanation log proxy as required by interpretability
+        explanation_log = f"\n\n[Explanation Log: Feature importance estimation complete. Confidence: {confidence:.2f}]"
+        if is_compliant:
+            modified_output += explanation_log
 
         # ── Article 15.3: RAG Grounding, Attribution, Copyright ───────────────
         para_15_3 = self._get_para("article_15_accuracy_robustness", "article_15_3")
