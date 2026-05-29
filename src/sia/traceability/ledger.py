@@ -11,7 +11,7 @@ class AuditLedger:
         payload_str = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(payload_str.encode('utf-8')).hexdigest()
 
-    def record_trace(self, prompt: str, sanitized_prompt: str, reasoning_path: str, output: str, compliance_score: float) -> str:
+    def record_trace(self, prompt: str, sanitized_prompt: str, reasoning_path: str, output: str, compliance_score: float, privacy_manifest: Optional[Dict[str, Any]] = None) -> str:
         record = {
             "type": "inference",
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -20,7 +20,8 @@ class AuditLedger:
             "reasoning_path": reasoning_path,
             "output": output,
             "compliance_score": compliance_score,
-            "pii_sanitized": prompt != sanitized_prompt
+            "pii_sanitized": prompt != sanitized_prompt,
+            "privacy_manifest": privacy_manifest
         }
         record_hash = self._hash_payload(record)
         record["signature_hash"] = record_hash

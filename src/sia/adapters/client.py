@@ -59,10 +59,10 @@ class SIAClient:
         """Toggles the global emergency kill-switch."""
         self._engine.risk_manager.set_kill_switch(active)
 
-    def chat(self, prompt: str, rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
+    def chat(self, prompt: str, user_location: str = "default", rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
         """Synchronous governed chat."""
         # --- 1. INGRESS ---
-        ingress_result = self._ingress.process_prompt(prompt)
+        ingress_result = self._ingress.process_prompt(prompt, user_location=user_location)
         if not ingress_result["allowed"]:
             return self._handle_blocked(prompt, ingress_result)
         if ingress_result.get("requires_human_review"):
@@ -76,12 +76,12 @@ class SIAClient:
         # --- 3. EGRESS & TRACE ---
         return self._process_egress(prompt, ingress_result, model_response, rag_metadata)
 
-    async def achat(self, prompt: str, rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
+    async def achat(self, prompt: str, user_location: str = "default", rag_metadata: Optional[Dict] = None, **model_kwargs) -> SIAResponse:
         """Asynchronous governed chat."""
         # --- 1. INGRESS ---
         # Note: Ingress is currently CPU-bound (regex/PII) or sync LLM calls.
         # Future optimization: make ingress fully async if using remote classification.
-        ingress_result = self._ingress.process_prompt(prompt)
+        ingress_result = self._ingress.process_prompt(prompt, user_location=user_location)
         if not ingress_result["allowed"]:
             return self._handle_blocked(prompt, ingress_result)
         if ingress_result.get("requires_human_review"):

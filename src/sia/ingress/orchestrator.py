@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 import hashlib
 from sia.ingress.classifier import IntentClassifier
-from sia.ingress.sanitizer import DataSanitizer
+from sia.ingress.sanitizer import UnifiedDataSanitizer
 from sia.core.engine import RuleEvaluationEngine
 from sia.core.cache import GovernanceCache
 
@@ -18,13 +18,13 @@ class ContextualIngressOrchestrator:
             use_llm=governance_adapter is not None,
             model_adapter=governance_adapter
         )
-        self.sanitizer = DataSanitizer()
+        self.sanitizer = UnifiedDataSanitizer()
         self.cache = GovernanceCache(max_size=cache_size)
 
     def _get_prompt_hash(self, prompt: str) -> str:
         return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
-    def process_prompt(self, prompt: str) -> Dict[str, Any]:
+    def process_prompt(self, prompt: str, user_location: str = "default") -> Dict[str, Any]:
         # --- 0. CACHE LOOKUP ---
         prompt_hash = self._get_prompt_hash(prompt)
         cached_result = self.cache.get(prompt_hash)
@@ -38,13 +38,15 @@ class ContextualIngressOrchestrator:
         if self.classifier.detect_injection(prompt):
             intent = "prompt_injection"
 
-        contains_pii = self.sanitizer.contains_pii(prompt)
-        sanitized_prompt = self.sanitizer.sanitize(prompt)
+        contains_pii = self.sanitizer.contains_sensitive_data(prompt)
+        sanitized_prompt, privacy_manifest = self.sanitizer.sanitize(prompt)
 
         context = {
             "intent": intent,
             "prompt_text": prompt,
             "contains_pii": contains_pii,
+            "user_location": user_location,
+            "privacy_manifest": privacy_manifest
         }
 
         eval_result = self.rule_engine.evaluate_ingress(context)

@@ -1,0 +1,38 @@
+# configs/privacy_profiles.yaml
+# ============================================================
+# SIA Regulatory Router & Unified Data Schema Profiles
+# GDPR (EU) vs. HIPAA (US) Dynamic Governance
+# ============================================================
+
+unified_data_schema:
+  tier_1_special_category:
+    description: "GDPR Special Category / HIPAA PHI"
+    examples: ["biometrics", "genetic_data", "clinical_notes", "health_conditions"]
+    action: "PSEUDONYMIZE_VAULT"
+  tier_2_general_pii:
+    description: "General PII"
+    examples: ["ip_addresses", "emails", "usage_logs"]
+    action: "REDACT_OR_HASH"
+
+compliance_profiles:
+  - id: "HYBRID_CLINICAL_TRIAL"
+    router:
+      - condition: "user.location == 'EU'"
+        policies: 
+          - "STRICT_GDPR_ENFORCEMENT"
+          - "GDPR_PURGE_RIGHT_TO_ERASURE"
+          - "ISO14971_HAZARD_LOG"
+        retention_days: 30 # Post-purpose minimization
+        
+      - condition: "user.location == 'US'"
+        policies: 
+          - "HIPAA_RETENTION_LOCK"
+          - "MANDATORY_MFA_VERIFIED"
+          - "ISO14971_HAZARD_LOG"
+        retention_days: 2190 # 6 years archival requirement
+        
+      - condition: "default"
+        policies:
+          - "STRICT_GDPR_ENFORCEMENT" # High-water mark default
+          - "ISO14971_HAZARD_LOG"
+        retention_days: 30

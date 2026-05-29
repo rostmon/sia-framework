@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SIA — EU AI Act Compliance Dashboard</title>
+  <title>SIA - AI Compliance Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -94,9 +94,57 @@
       font-size: 13px;
       color: var(--red);
       font-weight: 500;
-      animation: slideDown 0.3s ease;
     }
     @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; } }
+
+    /* ── Reports dropdown panel ────────────────────────────── */
+    .reports-trigger {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.35); color: var(--accent);
+      position: relative; transition: background 0.2s; user-select: none;
+    }
+    .reports-trigger:hover { background: rgba(99,102,241,0.25); }
+    .reports-trigger .caret { font-size: 9px; transition: transform 0.2s; }
+    .reports-trigger.open .caret { transform: rotate(180deg); }
+    .reports-panel {
+      display: none; position: absolute; top: calc(100% + 10px); right: 0;
+      width: 310px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      z-index: 200; animation: slideDown 0.15s ease;
+    }
+    .reports-panel.open { display: block; }
+    .reports-panel-title {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muted); margin-bottom: 10px; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .report-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 8px;
+      text-decoration: none; color: var(--text); font-size: 12px;
+      transition: background 0.15s;
+    }
+    .report-link:hover { background: var(--surface2); }
+    .report-link .rl-icon { font-size: 14px; width: 20px; text-align: center; }
+    .report-link .rl-label { flex: 1; }
+    .report-link .rl-tag {
+      font-size: 9px; padding: 2px 6px; border-radius: 4px;
+      background: rgba(99,102,241,0.12); color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .reports-section-sep {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--muted); margin: 8px 10px 4px;
+    }
+    .reports-regen {
+      display: block; text-align: center; margin-top: 10px; padding-top: 8px;
+      border-top: 1px solid var(--border); font-size: 10px; color: var(--muted);
+    }
+    .reports-regen code { font-family: 'JetBrains Mono',monospace; font-size:9px; color: var(--accent2); }
 
     /* ── Main layout ─────────────────────────────────────── */
     main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
@@ -133,6 +181,7 @@
     .kpi-card.amber .kpi-value  { color: var(--amber); }
     .kpi-card.purple .kpi-value { color: var(--purple); }
     .kpi-card.cyan  .kpi-value  { color: var(--accent2); }
+    .kpi-card.blue  .kpi-value  { color: #3b82f6; }
     .kpi-icon {
       position: absolute;
       top: 16px; right: 16px;
@@ -165,7 +214,7 @@
     /* ── Bottom row ─────────────────────────────────────── */
     .bottom-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 16px;
     }
 
@@ -200,13 +249,32 @@
 
     /* ── Audit log ──────────────────────────────────────── */
     .audit-log { display: flex; flex-direction: column; gap: 8px; }
+    #incidents-wrap, #audit-log-wrap {
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    #incidents-wrap::-webkit-scrollbar, #audit-log-wrap::-webkit-scrollbar {
+      width: 6px;
+    }
+    #incidents-wrap::-webkit-scrollbar-track, #audit-log-wrap::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.02);
+      border-radius: 3px;
+    }
+    #incidents-wrap::-webkit-scrollbar-thumb, #audit-log-wrap::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.12);
+      border-radius: 3px;
+    }
+    #incidents-wrap::-webkit-scrollbar-thumb:hover, #audit-log-wrap::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.22);
+    }
     .log-entry {
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 14px;
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 12px;
       transition: border-color 0.2s;
@@ -237,8 +305,39 @@
     }
     .empty-state .icon { font-size: 32px; opacity: 0.3; }
 
+    /* ── Dashboard Groups ─────────────────────────────────── */
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 32px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(99,120,180,0.1);
+    }
+    .group-header:first-of-type {
+      margin-top: 0;
+    }
+    .group-icon {
+      font-size: 20px;
+      color: var(--accent2);
+    }
+    .group-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .group-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .group-margin {
+      margin-bottom: 24px;
+    }
+
     /* ── Responsive ─────────────────────────────────────── */
-    @media (max-width: 900px) {
+    @media (max-width: 768px) {
       .charts-row, .bottom-row { grid-template-columns: 1fr; }
       header { padding: 14px 18px; }
       main   { padding: 18px; }
@@ -252,20 +351,65 @@
     <div class="logo-icon">⚖</div>
     <div>
       <div class="logo-text">SIA Framework</div>
-      <div class="logo-sub">EU AI Act Compliance Monitor</div>
+      <div class="logo-sub">EU AI Act, GDPR & HIPAA Compliance Mesh</div>
     </div>
   </div>
   <div class="header-right">
-    <a href="/report/iso14971" target="_blank" style="text-decoration: none;">
-      <div class="status-badge" style="background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); color: var(--amber); cursor: pointer;">
-        🛡 ISO 14971 Risk Report
+    <div style="position:relative">
+      <div class="reports-trigger" id="reports-btn" onclick="toggleReports()">
+        📋 Reports <span class="caret">▼</span>
       </div>
-    </a>
-    <a href="/report/annex-iv" target="_blank" style="text-decoration: none;">
-      <div class="status-badge" style="background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); color: var(--accent); cursor: pointer;">
-        📄 Download Annex IV Report
+      <div class="reports-panel" id="reports-panel">
+        <div class="reports-panel-title">Unified Regulatory Compliance Package</div>
+
+        <div class="reports-section-sep">Risk & AI Management</div>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/iso14971" target="_blank">
+          <span class="rl-icon">🛡</span>
+          <span class="rl-label">ISO 14971 Risk Management</span>
+          <span class="rl-tag">Part 01</span>
+        </a>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/eu_ai_act_annex_iv" target="_blank">
+          <span class="rl-icon">📄</span>
+          <span class="rl-label">EU AI Act (Annex IV)</span>
+          <span class="rl-tag">Part 02</span>
+        </a>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/iso42001" target="_blank">
+          <span class="rl-icon">🤖</span>
+          <span class="rl-label">ISO/IEC 42001 AI Management</span>
+          <span class="rl-tag">Part 03</span>
+        </a>
+
+        <div class="reports-section-sep">Privacy & Data Protection</div>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/gdpr_dpia" target="_blank">
+          <span class="rl-icon">🇪🇺</span>
+          <span class="rl-label">GDPR DPIA</span>
+          <span class="rl-tag">Part 04</span>
+        </a>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/uk_gdpr_assessment" target="_blank">
+          <span class="rl-icon">🇬🇧</span>
+          <span class="rl-label">UK GDPR Assessment</span>
+          <span class="rl-tag">Part 05</span>
+        </a>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/hipaa_ocr_evidence" target="_blank">
+          <span class="rl-icon">🇺🇸</span>
+          <span class="rl-label">HIPAA OCR Evidence</span>
+          <span class="rl-tag">Part 06</span>
+        </a>
+
+        <div class="reports-section-sep">Traceability</div>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp/cross_reference_index" target="_blank">
+          <span class="rl-icon">🔗</span>
+          <span class="rl-label">Cross-Reference Index</span>
+          <span class="rl-tag">Part 07</span>
+        </a>
+        <a class="report-link" href="http://127.0.0.1:8001/report/urcp" target="_blank">
+          <span class="rl-icon">📋</span>
+          <span class="rl-label">Full Package Index</span>
+          <span class="rl-tag">URCP</span>
+        </a>
+        <span class="reports-regen">Regenerate: <code>py src/sia/cli/generate_risk_report.py</code></span>
       </div>
-    </a>
+    </div>
     <div class="status-badge"><div class="pulse"></div> Live Monitoring</div>
     <div id="last-updated">Connecting...</div>
   </div>
@@ -276,8 +420,33 @@
 </div>
 
 <main>
-  <!-- KPI Cards -->
-  <div class="kpi-grid">
+  <!-- Charts Row -->
+  <div class="charts-row" style="margin-bottom: 24px;">
+    <div class="chart-card">
+      <div class="chart-title">Request Activity — Last 60 Minutes</div>
+      <div class="chart-sub">5-minute buckets by governance outcome</div>
+      <div class="chart-wrap">
+        <canvas id="timeseriesChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Action Distribution</div>
+      <div class="chart-sub">Governance outcome breakdown</div>
+      <div class="chart-wrap">
+        <canvas id="donutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group 1: Risk & AI Management Conformance -->
+  <div class="group-header">
+    <span class="group-icon">🛡</span>
+    <div>
+      <div class="group-title">Risk & AI Management Conformance</div>
+      <div class="group-subtitle">Evidence aligning with ISO 14971 (Part 01), EU AI Act (Part 02) & ISO 42001 (Part 03)</div>
+    </div>
+  </div>
+  <div class="kpi-grid group-margin">
     <div class="kpi-card">
       <div class="kpi-icon">📊</div>
       <div class="kpi-label">Total Requests</div>
@@ -289,6 +458,12 @@
       <div class="kpi-label">Compliance Rate</div>
       <div class="kpi-value" id="kpi-rate">—</div>
       <div class="kpi-sub">PASSED / Total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Avg Confidence</div>
+      <div class="kpi-value" id="kpi-conf">—</div>
+      <div class="kpi-sub">Art. 15.1 threshold: 0.85</div>
     </div>
     <div class="kpi-card red">
       <div class="kpi-icon">🛡</div>
@@ -308,65 +483,63 @@
       <div class="kpi-value" id="kpi-rewritten">—</div>
       <div class="kpi-sub">Art. 15.1/3 fallback</div>
     </div>
+  </div>
+
+  <!-- Group 2: Privacy & Data Protection -->
+  <div class="group-header">
+    <span class="group-icon">🔒</span>
+    <div>
+      <div class="group-title">Privacy & Data Protection</div>
+      <div class="group-subtitle">Evidence aligning with GDPR (Part 04), UK GDPR (Part 05) & HIPAA (Part 06)</div>
+    </div>
+  </div>
+  <div class="kpi-grid group-margin">
     <div class="kpi-card cyan">
-      <div class="kpi-icon">🔒</div>
-      <div class="kpi-label">PII Redactions</div>
+      <div class="kpi-icon">🇪🇺</div>
+      <div class="kpi-label">GDPR PII Redacted</div>
       <div class="kpi-value" id="kpi-pii">—</div>
-      <div class="kpi-sub">Art. 10.3 sanitized</div>
+      <div class="kpi-sub">Personal Data Sanitized</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-label">Avg Confidence</div>
-      <div class="kpi-value" id="kpi-conf">—</div>
-      <div class="kpi-sub">Art. 15.1 threshold: 0.85</div>
-    </div>
-  </div>
-
-  <!-- Charts Row -->
-  <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">Request Activity — Last 60 Minutes</div>
-      <div class="chart-sub">5-minute buckets by governance outcome</div>
-      <div class="chart-wrap">
-        <canvas id="timeseriesChart"></canvas>
-      </div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Action Distribution</div>
-      <div class="chart-sub">Governance outcome breakdown</div>
-      <div class="chart-wrap">
-        <canvas id="donutChart"></canvas>
-      </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">🇺🇸</div>
+      <div class="kpi-label">HIPAA PHI Vaulted</div>
+      <div class="kpi-value" id="kpi-phi">—</div>
+      <div class="kpi-sub">Protected Health Data</div>
     </div>
   </div>
 
-  <!-- Bottom Row -->
-  <div class="bottom-row">
-    <!-- Article triggers -->
-    <div class="chart-card">
-      <div class="chart-title">Article Trigger Frequency</div>
-      <div class="chart-sub">Most triggered EU AI Act paragraphs</div>
-      <div id="article-table-wrap">
-        <div class="empty-state"><div class="icon">📋</div>No blocks recorded yet</div>
-      </div>
+  <!-- Group 3: Post-Market Monitoring & Security Response -->
+  <div class="group-header">
+    <span class="group-icon">🚨</span>
+    <div>
+      <div class="group-title">Post-Market Monitoring & Incident Response</div>
+      <div class="group-subtitle">Real-time incident detection & security alerts (EU AI Act Article 72)</div>
     </div>
-
-    <!-- Review Queue -->
-    <div class="chart-card">
-      <div class="chart-title">Article 14.4 Review Queue</div>
-      <div class="chart-sub">Pending Human Oversight interventions</div>
-      <div id="review-queue-wrap">
-        <div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>
-      </div>
+  </div>
+  <div class="kpi-grid group-margin">
+    <div class="kpi-card red">
+      <div class="kpi-icon">🚨</div>
+      <div class="kpi-label">Active Incidents</div>
+      <div class="kpi-value" id="kpi-incidents">—</div>
+      <div class="kpi-sub">Drift & Anomalies (Art. 72)</div>
+    </div>
+    <div class="kpi-card green" id="card-kill-switch">
+      <div class="kpi-icon">⚙</div>
+      <div class="kpi-label">System Integrity</div>
+      <div class="kpi-value" id="kpi-killswitch">ACTIVE</div>
+      <div class="kpi-sub">Emergency Kill-Switch (Art. 72.1)</div>
     </div>
   </div>
 
-  <div style="margin-top: 24px;">
+
+
+  <!-- Logs Row -->
+  <div class="bottom-row" style="margin-top: 24px;">
     <!-- Incidents log -->
-    <div class="chart-card" style="margin-bottom: 24px; border-color: rgba(239,68,68,0.3);">
+    <div class="chart-card" style="border-color: rgba(239,68,68,0.3);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
         <div class="chart-title" style="color: var(--red);">Runtime Risk Management Alerts (Art. 72)</div>
-        <button onclick="toggleKillSwitch()" id="kill-switch-btn" style="background:rgba(239,68,68,0.1); border:1px solid var(--red); color:var(--red); padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:600; font-family:'JetBrains Mono', monospace; transition:all 0.2s;">🛑 ENGAGE KILL-SWITCH</button>
+        <button onclick="toggleKillSwitch()" id="kill-switch-btn" style="background:rgba(239,68,68,0.1); border:1px solid var(--red); color:var(--red); padding:4px 10px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; font-family:'JetBrains Mono', monospace; transition:all 0.2s;">🛑 ENGAGE KILL-SWITCH</button>
       </div>
       <div class="chart-sub">Live detection of Data Drift, Poisoning Anomalies, and Rate Limits.</div>
       <div id="incidents-wrap">
@@ -391,7 +564,7 @@
   /* --- WebSocket Connection --- */
   function connectWS() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host || "127.0.0.1:8001";
+    const host = "127.0.0.1:8001"; // Force API port
     ws = new WebSocket(`${protocol}//${host}/ws/metrics`);
 
     ws.onmessage = (event) => {
@@ -413,13 +586,40 @@
     const s = data.summary;
 
     // KPIs
-    document.getElementById("kpi-total").textContent    = s.total_requests;
-    document.getElementById("kpi-rate").textContent     = s.compliance_rate + "%";
-    document.getElementById("kpi-blocked").textContent  = s.blocked;
-    document.getElementById("kpi-veto").textContent     = s.human_veto;
+    document.getElementById("kpi-total").textContent     = s.total_requests;
+    document.getElementById("kpi-rate").textContent      = s.compliance_rate + "%";
+    document.getElementById("kpi-blocked").textContent   = s.blocked;
+    document.getElementById("kpi-veto").textContent      = s.human_veto;
     document.getElementById("kpi-rewritten").textContent = s.rewritten;
-    document.getElementById("kpi-pii").textContent      = s.pii_redactions;
-    document.getElementById("kpi-conf").textContent     = s.avg_confidence.toFixed(2);
+    document.getElementById("kpi-pii").textContent       = s.pii_redactions;
+    document.getElementById("kpi-phi").textContent       = s.phi_vaulted;
+    document.getElementById("kpi-incidents").textContent = s.incident_count;
+    document.getElementById("kpi-conf").textContent      = s.avg_confidence.toFixed(2);
+
+    // Sync and update emergency kill switch state
+    const killSwitchActive = s.kill_switch_active;
+    ksActive = killSwitchActive;
+    
+    const btn = document.getElementById("kill-switch-btn");
+    if (killSwitchActive) {
+      btn.style.background = "var(--red)";
+      btn.style.color = "white";
+      btn.textContent = "⚠ KILL-SWITCH ACTIVE - CLICK TO RESET";
+    } else {
+      btn.style.background = "rgba(239,68,68,0.1)";
+      btn.style.color = "var(--red)";
+      btn.textContent = "🛑 ENGAGE KILL-SWITCH";
+    }
+
+    const ksCard = document.getElementById("card-kill-switch");
+    const ksVal = document.getElementById("kpi-killswitch");
+    if (killSwitchActive) {
+      ksCard.className = "kpi-card red";
+      ksVal.textContent = "SHUTDOWN";
+    } else {
+      ksCard.className = "kpi-card green";
+      ksVal.textContent = "ACTIVE";
+    }
 
     // Anomaly banner
     const banner = document.getElementById("anomaly-banner");
@@ -443,14 +643,8 @@
     ];
     donutChart.update('none');
 
-    // Article table
-    renderArticleTable(data.article_triggers || {});
-
     // Audit log
     renderAuditLog(data.recent_events || []);
-
-    // Review queue
-    fetchReviews();
 
     // Incidents
     fetchIncidents();
@@ -460,24 +654,7 @@
     document.getElementById("last-updated").textContent = "Connected • " + now.toLocaleTimeString();
   }
 
-  async function fetchReviews() {
-    try {
-      const response = await fetch("/reviews");
-      const reviews = await response.json();
-      renderReviewQueue(reviews);
-    } catch (err) {
-      console.error("Error fetching reviews:", err);
-    }
-  }
 
-  async function submitReview(hash, decision) {
-    try {
-      await fetch(`/review/${hash}?decision=${decision}`, { method: "POST" });
-      fetchReviews(); // Refresh
-    } catch (err) {
-      console.error("Error submitting review:", err);
-    }
-  }
 
   let ksActive = false;
   async function toggleKillSwitch() {
@@ -505,7 +682,7 @@
 
   async function fetchIncidents() {
     try {
-      const response = await fetch("/incidents");
+      const response = await fetch("http://127.0.0.1:8001/incidents");
       const data = await response.json();
       renderIncidents(data);
     } catch (err) {
@@ -537,29 +714,7 @@
     wrap.innerHTML = html;
   }
 
-  function renderReviewQueue(reviews) {
-    const wrap = document.getElementById("review-queue-wrap");
-    if (!reviews.length) {
-      wrap.innerHTML = `<div class="empty-state"><div class="icon">⚖</div>No pending reviews</div>`;
-      return;
-    }
-    let html = `<div class="audit-log">`;
-    for (const r of reviews) {
-      html += `<div class="log-entry">
-        <div class="action-badge HUMAN_VETO">PENDING</div>
-        <div style="flex-grow:1">
-          <div class="log-prompt">${escHtml(r.prompt_preview)}</div>
-          <div style="font-size:10px;color:var(--amber);margin-top:2px">Article 14.4 Oversight Required</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="submitReview('${r.hash}','APPROVED')" style="background:var(--green); border:none; color:white; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:600;">Approve</button>
-          <button onclick="submitReview('${r.hash}','REJECTED')" style="background:var(--red); border:none; color:white; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:600;">Reject</button>
-        </div>
-      </div>`;
-    }
-    html += `</div>`;
-    wrap.innerHTML = html;
-  }
+
 
   /* ── Chart setup ──────────────────────────────────────── */
   const chartDefaults = {
@@ -619,27 +774,7 @@
   /* ── DOM helpers ─────────────────────────────────────── */
   const actionClass = a => ({PASSED:"PASSED", BLOCKED:"BLOCKED", HUMAN_VETO:"HUMAN_VETO", REWRITTEN:"REWRITTEN"})[a] || "PASSED";
 
-  function renderArticleTable(triggers) {
-    const wrap = document.getElementById("article-table-wrap");
-    const entries = Object.entries(triggers);
-    if (!entries.length) {
-      wrap.innerHTML = `<div class="empty-state"><div class="icon">📋</div>No blocks recorded yet</div>`;
-      return;
-    }
-    const max = Math.max(...entries.map(e => e[1]));
-    let html = `<table class="article-table">
-      <thead><tr><th>Article</th><th class="bar-cell">Frequency</th><th>Count</th></tr></thead><tbody>`;
-    for (const [art, count] of entries) {
-      const pct = Math.round((count / max) * 100);
-      html += `<tr>
-        <td><span class="article-code">${art.replace(/_/g," ")}</span></td>
-        <td class="bar-cell"><div class="mini-bar-wrap"><div class="mini-bar" style="width:${pct}%"></div></div></td>
-        <td>${count}</td>
-      </tr>`;
-    }
-    html += `</tbody></table>`;
-    wrap.innerHTML = html;
-  }
+
 
   function renderAuditLog(events) {
     const wrap = document.getElementById("audit-log-wrap");
@@ -674,6 +809,22 @@
 
   // Initial load
   connectWS();
+
+  // Reports dropdown
+  function toggleReports() {
+    const btn   = document.getElementById("reports-btn");
+    const panel = document.getElementById("reports-panel");
+    btn.classList.toggle("open");
+    panel.classList.toggle("open");
+  }
+  document.addEventListener("click", function(e) {
+    const btn   = document.getElementById("reports-btn");
+    const panel = document.getElementById("reports-panel");
+    if (btn && !btn.contains(e.target)) {
+      btn.classList.remove("open");
+      panel.classList.remove("open");
+    }
+  });
 </script>
 </body>
 </html>

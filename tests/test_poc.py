@@ -113,7 +113,7 @@ def run_poc():
     print(f"\n{'='*62}")
     ok = r.action == "PASSED" and has_header
     results.append(("Art.50.1 AI Content Marker Header", ok))
-    print(f"{'✅ PASS' if ok else '❌ FAIL'} [Art.50.1 AI Content Marker Header]")
+    print(f"{PASS if ok else FAIL} [Art.50.1 AI Content Marker Header]")
     print(f"  Headers: {r.http_headers}")
 
     # ── Art.50.2: Deepfake / Synthetic Media ──────────────────────────────────
@@ -129,10 +129,10 @@ def run_poc():
         print("Failed tests:")
         for label, ok in results:
             if not ok:
-                print(f"  ❌ {label}")
+                print(f"  [FAIL] {label}")
         sys.exit(1)
     else:
-        print("All governance gates validated. ✅")
+        print("All governance gates validated. [PASS]")
 
 
 if __name__ == "__main__":

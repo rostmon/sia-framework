@@ -1,10 +1,44 @@
 from typing import Any, Dict, List, Optional, Tuple
+import yaml
+import os
 from sia.core.config import EUAIActConfig
 from sia.core.risk import RuntimeRiskManager, IncidentLogger
 
 
 class SIAConfigError(Exception):
     """Raised when a deployment_assertion rule fails at SIAClient startup."""
+
+class RegulatoryRouter:
+    """
+    Dynamically routes compliance logic based on user context (e.g., GDPR vs HIPAA).
+    Implements the 'Strictest Rule Wins' high-water mark.
+    """
+    def __init__(self):
+        self.profiles = {}
+        self._load_profiles()
+
+    def _load_profiles(self):
+        path = "configs/privacy_profiles.yaml"
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                for profile in data.get("compliance_profiles", []):
+                    self.profiles[profile["id"]] = profile["router"]
+
+    def resolve_policies(self, profile_id: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Returns the active policies and retention config based on context."""
+        router = self.profiles.get(profile_id, [])
+        location = context.get("user_location", "default")
+        
+        for route in router:
+            if "==" in route["condition"]:
+                _, expected = route["condition"].split("==")
+                expected = expected.strip().strip("'").strip('"')
+                if location == expected:
+                    return route
+            elif route["condition"] == "default":
+                return route
+        return {"policies": ["STRICT_GDPR_ENFORCEMENT"], "retention_days": 30}
 
 
 class RuleEvaluationEngine:
@@ -20,6 +54,7 @@ class RuleEvaluationEngine:
         self.environment = environment
         self.active_category: Optional[str] = None
         self.risk_manager = RuntimeRiskManager()
+        self.router = RegulatoryRouter()
         self._validate_deployment_assertions()
 
     def _validate_deployment_assertions(self) -> None:
@@ -85,9 +120,14 @@ class RuleEvaluationEngine:
         if not self.is_environment_active():
             return {"allowed": True, "requires_human_review": False,
                     "trigger_paragraph": None, "trigger_reason": None,
-                    "risk_score": 0.0}
+                    "risk_score": 0.0, "active_policies": {}}
 
-        # --- 0. Runtime Risk Management Checks ---
+        # --- 0. Regulatory Router Resolution ---
+        router_config = self.router.resolve_policies("HYBRID_CLINICAL_TRIAL", context)
+        context["active_policies"] = router_config.get("policies", [])
+        context["retention_days"] = router_config.get("retention_days", 30)
+
+        # --- 1. Runtime Risk Management Checks ---
         if self.risk_manager.is_kill_switch_active():
             IncidentLogger.log_incident("KILL_SWITCH_ACTIVE", "Request blocked due to active emergency kill-switch.")
             return self._block("article_14_4", "Emergency Kill-Switch is active", 503)
@@ -97,6 +137,14 @@ class RuleEvaluationEngine:
             return self._block("article_15", "Rate limit exceeded (Model Inversion Protection)", 429)
 
         original_prompt = context.get("prompt_text", "")
+        
+        # Log privacy incidents based on the manifest
+        manifest = context.get("privacy_manifest", {})
+        if manifest.get("tier_1_phi"):
+             IncidentLogger.log_incident("PHI_DETECTED", f"Tier 1 Data Pseudonymized. Policies: {context['active_policies']}")
+        elif manifest.get("tier_2_pii"):
+             IncidentLogger.log_incident("PII_DETECTED", "Tier 2 Data Redacted.")
+
         sanitized_prompt = self.risk_manager.sanitize_input(original_prompt)
         context["prompt_text"] = sanitized_prompt # Update context with sanitized
         

@@ -31,6 +31,21 @@ class MetricsCollector:
                         pass
         return entries
 
+    def _load_incidents(self) -> List[Dict[str, Any]]:
+        path = self.ledger_path.parent / "incident_ledger.jsonl"
+        if not path.exists():
+            return []
+        entries = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+        return entries
+
     def compute(self) -> Dict[str, Any]:
         entries = self._load_entries()
         if not entries:
@@ -72,8 +87,22 @@ class MetricsCollector:
         scores = [e.get("compliance_score", 0.0) for e in inferences]
         avg_confidence = round(sum(scores) / len(scores), 3) if scores else 0.0
 
-        # ── PII redactions ───────────────────────────────────────────────────
-        pii_count = sum(1 for e in inferences if e.get("pii_sanitized"))
+        # ── PII/PHI redactions ───────────────────────────────────────────────────
+        pii_count = 0
+        phi_count = 0
+        for e in inferences:
+            manifest = e.get("privacy_manifest")
+            if manifest:
+                if manifest.get("tier_1_phi"):
+                    phi_count += 1
+                if manifest.get("tier_2_pii"):
+                    pii_count += 1
+            elif e.get("pii_sanitized"): # Fallback for old records
+                pii_count += 1
+
+        # ── Incident count ────────────────────────────────────────────────────
+        incidents = self._load_incidents()
+        incident_count = len(incidents)
 
         # ── Consecutive block detection (Art. 72.1 anomaly) ──────────────────
         max_consecutive = 0
@@ -125,6 +154,9 @@ class MetricsCollector:
             except Exception:
                 pass
 
+        # ── Kill Switch Status ────────────────────────────────────────────────
+        kill_switch_active = (self.ledger_path.parent / "kill_switch.flag").exists()
+
         # ── Recent events (last 10) ───────────────────────────────────────────
         recent = []
         for e in reversed(entries[-10:]):
@@ -148,8 +180,11 @@ class MetricsCollector:
                 "compliance_rate": compliance_rate,
                 "avg_confidence": avg_confidence,
                 "pii_redactions": pii_count,
+                "phi_vaulted": phi_count,
+                "incident_count": incident_count,
                 "anomaly_alert": anomaly_alert,
                 "max_consecutive_blocks": max_consecutive,
+                "kill_switch_active": kill_switch_active,
             },
             "article_triggers": dict(article_counts.most_common(10)),
             "action_distribution": dict(action_counts),
@@ -166,11 +201,14 @@ class MetricsCollector:
 
     def _empty_metrics(self) -> Dict[str, Any]:
         empty_ts = {"labels": [], "passed": [], "blocked": [], "vetoed": [], "rewritten": []}
+        kill_switch_active = (self.ledger_path.parent / "kill_switch.flag").exists()
         return {
             "summary": {
                 "total_requests": 0, "passed": 0, "blocked": 0, "human_veto": 0,
                 "rewritten": 0, "compliance_rate": 0.0, "avg_confidence": 0.0,
-                "pii_redactions": 0, "anomaly_alert": False, "max_consecutive_blocks": 0,
+                "pii_redactions": 0, "phi_vaulted": 0, "incident_count": 0,
+                "anomaly_alert": False, "max_consecutive_blocks": 0,
+                "kill_switch_active": kill_switch_active,
             },
             "article_triggers": {},
             "action_distribution": {},

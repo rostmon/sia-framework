@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] — 2026-05-29
+
+### Added
+- **Unified Privacy-as-Safety (GDPR & HIPAA)** — Unified Sensitive Data Schema with Tier 1 (PHI/Special Category) and Tier 2 (General PII) tracking.
+- **Unified Regulatory Compliance Package (URCP)** — Comprehensive report generation covering GDPR DPIA, UK GDPR Assessment, and HIPAA OCR Evidence.
+- `configs/privacy_profiles.yaml` — Configurable governance policies for location-based regulatory routing (e.g., EU Purge, US Vault).
+- HZ-22 (Unauthorized PHI/Special Category Exposure) and HZ-23 (Regulatory Retention Conflict) introduced to `iso_14971_hazards.yaml`.
+- Traceability ledger enhanced to support `privacy_manifest` field.
+
+### Changed
+- Dashboard overhauled to include Unified Regulatory Compliance Package (URCP) dropdown.
+- Dashboard added Privacy & Data Protection group for real-time tracking of GDPR PII Redacted and HIPAA PHI Vaulted KPIs.
+- Egress evaluation enhanced with `[SIA BLOCK]` safe mode fallback logging.
+
+---
+
 ## [0.1.1] — 2026-05-05
 
 ### Added

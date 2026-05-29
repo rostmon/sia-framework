@@ -1,13 +1,51 @@
 hazards:
   HZ-01:
-    failure_mode: "PII Leakage"
-    hazard_description: "Data Breach, GDPR violation."
+    failure_mode: "Unified Privacy Leakage (Tier 2 PII)"
+    hazard_description: "General PII Leakage leading to GDPR violation or identity compromise."
     pre_mitigation_severity: 4
     pre_mitigation_probability: 5
-    sia_mitigation_logic: "STRIP_PII"
-    mitigation_description: "Dynamic regex-based ingress sanitizer that redacts sensitive personal data before network transit."
+    sia_mitigation_logic: "REDACT_OR_HASH"
+    mitigation_description: "Dynamic ingress sanitizer that redacts general PII before network transit."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 10 (Data Governance)"
+      gdpr: "Art. 5(1)(c) (Data Minimisation)"
+      uk_gdpr: "Art. 5(1)(c) (Data Minimisation)"
+      hipaa: "§164.514 (De-identification)"
+      iso_42001: "Clause 6.1.2 (Information Security Risk)"
+
+  HZ-22:
+    failure_mode: "Unauthorized PHI/Special Category Exposure (Tier 1)"
+    hazard_description: "Exposure of Special Category data (GDPR) or PHI (HIPAA) resulting in severe harm or massive regulatory fines."
+    pre_mitigation_severity: 5
+    pre_mitigation_probability: 4
+    sia_mitigation_logic: "PSEUDONYMIZE_VAULT"
+    mitigation_description: "Zero-Trust Supervisory Mesh encrypts identifiers, separating keys for logic-based storage (Vault vs. Purge)."
+    residual_severity: 5
+    residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 10.5 (Special Category Data)"
+      gdpr: "Art. 9 (Special Categories)"
+      uk_gdpr: "Art. 9 (Special Categories)"
+      hipaa: "§164.312 (Technical Safeguards)"
+      iso_42001: "Clause 8.4 (AI System Lifecycle)"
+
+  HZ-23:
+    failure_mode: "Regulatory Retention Conflict (GDPR vs HIPAA)"
+    hazard_description: "Data retained too long violating GDPR Art. 5, or deleted too soon violating HIPAA archival rules."
+    pre_mitigation_severity: 4
+    pre_mitigation_probability: 5
+    sia_mitigation_logic: "REGULATORY_ROUTER"
+    mitigation_description: "SIA Regulatory Router applies location-based 'Strictest Rule Wins' policy (e.g., US Vault, EU Purge)."
+    residual_severity: 4
+    residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 9 (Quality Management)"
+      gdpr: "Art. 17 (Right to Erasure), Art. 5(1)(e) (Storage Limitation)"
+      uk_gdpr: "Art. 17 (Right to Erasure)"
+      hipaa: "§164.530(j) (Retention — 6 years)"
+      iso_42001: "Clause 9.1 (Monitoring & Measurement)"
 
   HZ-02:
     failure_mode: "Lack of Traceability"
@@ -18,6 +56,12 @@ hazards:
     mitigation_description: "Traceability engine hashes all system interactions with SHA-256 into the immutable audit ledger."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 12 (Record-Keeping)"
+      gdpr: "Art. 30 (Records of Processing)"
+      uk_gdpr: "Art. 30 (Records of Processing)"
+      hipaa: "§164.312(b) (Audit Controls)"
+      iso_42001: "Clause 9.1 (Monitoring & Measurement)"
 
   HZ-03:
     failure_mode: "Automation Bias"
@@ -28,6 +72,12 @@ hazards:
     mitigation_description: "Transparency engine automatically appends clear machine and human-readable warnings to compliant outputs."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 13 (Transparency)"
+      gdpr: "Art. 22 (Automated Decision-Making)"
+      uk_gdpr: "Art. 22 (Automated Decision-Making)"
+      hipaa: "N/A"
+      iso_42001: "Clause 8.6 (Human Oversight)"
 
   HZ-04:
     failure_mode: "Automated High-Risk Decision"
@@ -38,6 +88,12 @@ hazards:
     mitigation_description: "Human-in-the-Loop gate triggering an HTTP 202 to pause execution for a mandatory human signature on Annex III tasks."
     residual_severity: 5
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 14.4 (Human Oversight — Annex III)"
+      gdpr: "Art. 22 (Automated Decision-Making)"
+      uk_gdpr: "Art. 22 (Automated Decision-Making)"
+      hipaa: "§164.306(a) (Administrative Safeguards)"
+      iso_42001: "Clause 8.6 (Human Oversight)"
 
   HZ-05:
     failure_mode: "Data Drift"
@@ -48,6 +104,12 @@ hazards:
     mitigation_description: "Active post-market monitoring using statistical heuristics to track shifts in input distributions against baselines."
     residual_severity: 3
     residual_probability: 2
+    regulatory_citations:
+      eu_ai_act: "Art. 72 (Post-Market Monitoring)"
+      gdpr: "Art. 35 (DPIA — ongoing review)"
+      uk_gdpr: "Art. 35 (DPIA)"
+      hipaa: "§164.308(a)(8) (Evaluation)"
+      iso_42001: "Clause 10.1 (Continual Improvement)"
 
   HZ-06:
     failure_mode: "Hallucination / Confabulation"
@@ -58,6 +120,12 @@ hazards:
     mitigation_description: "Truth Razor grounding engine requires a minimum confidence threshold, rewriting failures into a safe deterministic fallback."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.1 (Accuracy & Robustness)"
+      gdpr: "Art. 5(1)(d) (Accuracy)"
+      uk_gdpr: "Art. 5(1)(d) (Accuracy)"
+      hipaa: "§164.306(a)(1) (Integrity)"
+      iso_42001: "Clause 8.5 (AI System Verification)"
 
   HZ-07:
     failure_mode: "Prompt Injection"
@@ -68,6 +136,12 @@ hazards:
     mitigation_description: "Adversarial intent classifier that blocks inputs matching known jailbreak or instruction-override patterns."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.3 (Cybersecurity)"
+      gdpr: "Art. 32 (Security of Processing)"
+      uk_gdpr: "Art. 32 (Security of Processing)"
+      hipaa: "§164.312(a) (Access Control)"
+      iso_42001: "Clause 8.3 (Adversarial Robustness)"
 
   HZ-08:
     failure_mode: "Data Poisoning / Anomaly"
@@ -78,6 +152,12 @@ hazards:
     mitigation_description: "Automated risk management control detecting extreme payload sizes and unusual non-standard character density."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 72 (Post-Market Monitoring)"
+      gdpr: "Art. 32 (Security of Processing)"
+      uk_gdpr: "Art. 32 (Security of Processing)"
+      hipaa: "§164.308(a)(6) (Incident Response)"
+      iso_42001: "Clause 10.2 (Incident Management)"
 
   HZ-09:
     failure_mode: "Unacceptable Risk Practice"
@@ -88,6 +168,12 @@ hazards:
     mitigation_description: "Ingress semantic filter that proactively drops interactions matching explicitly prohibited AI use-cases."
     residual_severity: 5
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 5 (Prohibited AI Practices)"
+      gdpr: "Art. 9 (Special Categories — Biometric)"
+      uk_gdpr: "Art. 9 (Special Categories)"
+      hipaa: "N/A"
+      iso_42001: "Clause 4.2 (Interested Parties — Ethical Constraints)"
 
   HZ-10:
     failure_mode: "Resource Exhaustion"
@@ -98,6 +184,12 @@ hazards:
     mitigation_description: "Limits the maximum number of tokens per request to prevent infrastructure exhaustion and buffer overflows."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.3 (Cybersecurity & Availability)"
+      gdpr: "Art. 32(1)(b) (Availability)"
+      uk_gdpr: "Art. 32(1)(b) (Availability)"
+      hipaa: "§164.312(a)(2)(ii) (Emergency Access)"
+      iso_42001: "Clause 7.1 (Resources)"
 
   HZ-11:
     failure_mode: "High-Frequency Abuse"
@@ -108,6 +200,12 @@ hazards:
     mitigation_description: "In-memory sliding window rate limiter enforcing maximum requests per minute per client session."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.3 (Cybersecurity)"
+      gdpr: "Art. 32 (Security of Processing)"
+      uk_gdpr: "Art. 32 (Security of Processing)"
+      hipaa: "§164.312(a) (Access Control)"
+      iso_42001: "Clause 8.3 (Adversarial Robustness)"
 
   HZ-12:
     failure_mode: "Subliminal/Exploitative Practice"
@@ -118,6 +216,12 @@ hazards:
     mitigation_description: "Proactively drops interactions matching unequivocally prohibited AI practices."
     residual_severity: 5
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 5(1)(a-c) (Prohibited Practices)"
+      gdpr: "Art. 5(1)(a) (Lawfulness, Fairness)"
+      uk_gdpr: "Art. 5(1)(a) (Lawfulness, Fairness)"
+      hipaa: "N/A"
+      iso_42001: "Clause 4.2 (Ethical Constraints)"
 
   HZ-13:
     failure_mode: "Unauthorized Sensitive Data Usage"
@@ -128,6 +232,12 @@ hazards:
     mitigation_description: "Blocks inputs containing health, genetic, racial, or political data unless strictly necessary."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 10.5 (Special Category Data)"
+      gdpr: "Art. 9 (Special Category Data)"
+      uk_gdpr: "Art. 9 (Special Category Data)"
+      hipaa: "§164.308(a)(3) (Workforce Authorization)"
+      iso_42001: "Clause 8.4 (AI System Lifecycle)"
 
   HZ-14:
     failure_mode: "User Misunderstanding"
@@ -138,6 +248,12 @@ hazards:
     mitigation_description: "Dynamically appends Annex III specific disclaimers (e.g., healthcare, legal) to output."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 13 (Transparency & Information)"
+      gdpr: "Art. 13 (Right to Information)"
+      uk_gdpr: "Art. 13 (Right to Information)"
+      hipaa: "§164.520 (Notice of Privacy Practices)"
+      iso_42001: "Clause 7.4 (Communication)"
 
   HZ-15:
     failure_mode: "Malformed Input / System Crash"
@@ -148,6 +264,12 @@ hazards:
     mitigation_description: "Validates input token length and encodings (e.g., utf-8) per request."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.1 (Accuracy & Robustness)"
+      gdpr: "Art. 32 (Security of Processing)"
+      uk_gdpr: "Art. 32 (Security of Processing)"
+      hipaa: "§164.312(e) (Transmission Security)"
+      iso_42001: "Clause 8.5 (AI System Verification)"
 
   HZ-16:
     failure_mode: "Low Quality Output"
@@ -158,6 +280,12 @@ hazards:
     mitigation_description: "Enforces a minimum confidence threshold on outputs before they can be returned."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.1 (Accuracy)"
+      gdpr: "Art. 5(1)(d) (Accuracy)"
+      uk_gdpr: "Art. 5(1)(d) (Accuracy)"
+      hipaa: "§164.306(a)(1) (Integrity)"
+      iso_42001: "Clause 8.5 (Verification & Validation)"
 
   HZ-17:
     failure_mode: "Ungrounded Response"
@@ -168,6 +296,12 @@ hazards:
     mitigation_description: "Ensures outputs are grounded in approved Retrieval-Augmented Generation sources."
     residual_severity: 4
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.1 (Accuracy & Robustness)"
+      gdpr: "Art. 5(1)(d) (Accuracy)"
+      uk_gdpr: "Art. 5(1)(d) (Accuracy)"
+      hipaa: "N/A"
+      iso_42001: "Clause 8.5 (Verification)"
 
   HZ-18:
     failure_mode: "Unverifiable Source"
@@ -178,6 +312,12 @@ hazards:
     mitigation_description: "Requires inline attribution/citation of the exact knowledge base source."
     residual_severity: 2
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 13 (Transparency)"
+      gdpr: "Art. 5(1)(a) (Lawfulness)"
+      uk_gdpr: "Art. 5(1)(a) (Lawfulness)"
+      hipaa: "N/A"
+      iso_42001: "Clause 7.4 (Communication)"
 
   HZ-19:
     failure_mode: "Copyright Infringement"
@@ -188,6 +328,12 @@ hazards:
     mitigation_description: "Blocks sources outside of the explicitly allowlisted internal KB or creative commons."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 53 (GPAI — Copyright)"
+      gdpr: "N/A"
+      uk_gdpr: "N/A"
+      hipaa: "N/A"
+      iso_42001: "Clause 4.2 (Legal Constraints)"
 
   HZ-20:
     failure_mode: "Deepfake Ambiguity"
@@ -198,6 +344,12 @@ hazards:
     mitigation_description: "Injects HTTP headers marking content as AI-generated for machine parsability."
     residual_severity: 2
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 50.1 (AI-Generated Content Disclosure)"
+      gdpr: "N/A"
+      uk_gdpr: "N/A"
+      hipaa: "N/A"
+      iso_42001: "Clause 7.4 (Communication)"
 
   HZ-21:
     failure_mode: "Unauthorized Deepfake Generation"
@@ -208,3 +360,9 @@ hazards:
     mitigation_description: "Blocks requests for deepfakes, face swaps, or synthetic voice impersonations."
     residual_severity: 3
     residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 50.2 (Synthetic Media)"
+      gdpr: "Art. 9 (Biometric Data)"
+      uk_gdpr: "Art. 9 (Biometric Data)"
+      hipaa: "N/A"
+      iso_42001: "Clause 4.2 (Ethical Constraints)"

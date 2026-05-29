@@ -41,6 +41,7 @@ async def chat_completion(request: ChatRequest, response: Response):
         }
 
     sanitized_prompt = ingress_result["sanitized_prompt"]
+    privacy_manifest = ingress_result.get("privacy_manifest")
 
     llm_output_text = "Here is the response. SIA uses Governance-as-Code."
     llm_reasoning = "<thought> I should mention Governance-as-Code. </thought>"
@@ -58,7 +59,8 @@ async def chat_completion(request: ChatRequest, response: Response):
         sanitized_prompt=sanitized_prompt,
         reasoning_path=reasoning_path,
         output=verified_output,
-        compliance_score=compliance_score
+        compliance_score=compliance_score,
+        privacy_manifest=privacy_manifest
     )
 
     return {"output": verified_output, "signature_hash": signature_hash, "status": "COMPLETED"}
