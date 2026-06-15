@@ -30,13 +30,11 @@ The following table outlines the primary AI hazards identified, their unmitigate
 | **HZ-03** | **Hallucination / Confabulation:** LLM generates a highly fluent but factually incorrect response. | User harm, misdiagnosis. | **16** (Sev:4, Prob:4) | **Truth Razor:** (`article_15_3`) Egress grounding engine requires `MIN_CONFIDENCE: 0.85`. Executes `BLOCK_AND_REWRITE` if failed. | **4** (Sev:4, Prob:1) |
 | **HZ-04** | **Automation Bias:** User implicitly trusts LLM output without realizing it is AI-generated. | Overreliance, user error. | **12** (Sev:3, Prob:4) | **Transparency:** (`article_13_1`) Egress engine automatically appends `APPEND_WATERMARK` to all compliant outputs. | **3** (Sev:3, Prob:1) |
 | **HZ-05** | **Lack of Traceability:** System generates a harmful output but there is no record of the prompt or reasoning. | Non-compliance, lack of accountability. | **15** (Sev:3, Prob:5) | **Audit Ledger:** (`article_12_1`) Traceability engine hashes all interactions with SHA-256 into `audit_ledger.jsonl`. | **3** (Sev:3, Prob:1) |
-## 3. Automated Hazard Analysis & Traceability Matrix
-
-The SIA Framework implements an automated risk management lifecycle. Hazards are centrally defined in `configs/iso_14971_hazards.yaml` and mapped to deterministic governance logic.
+The SIA Framework implements an automated risk management lifecycle. Hazards are centrally defined in `configs/iso_risk_registry.yaml` and mapped to deterministic governance logic.
 
 ### Hazard Identification Matrix
 The master Hazard Traceability Matrix is automatically generated based on the current configuration. It includes:
-- **Hazard IDs (HZ-01 through HZ-23)**: Mapping failure modes to consequences, including the new Privacy-as-Safety hazards (HZ-22: Unauthorized PHI Exposure, HZ-23: Regulatory Retention Conflict).
+- **Hazard IDs (HZ-01 through HZ-26)**: Mapping failure modes to consequences, including Privacy-as-Safety hazards (HZ-22: Unauthorized PHI Exposure, HZ-23: Regulatory Retention Conflict) and ML-specific clinical hazards (HZ-24: Training Data Under-Representativeness, HZ-25: Out-of-Distribution Inputs, HZ-26: Clinical Automation Bias) informed by AAMI TIR34971:2023.
 - **Risk Evaluation**: Pre-mitigation and Residual RPN (Severity x Probability).
 - **Technical Mitigations**: Direct traceability to `SIA Mitigation Logic` (e.g., `STRIP_PII`, `BLOCK_PROMPT_INJECTION`, `PSEUDONYMIZE_VAULT`).
 - **Mitigation Descriptions**: Detailed technical rationale for each deterministic gate.

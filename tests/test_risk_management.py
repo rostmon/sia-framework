@@ -72,5 +72,56 @@ class TestRiskManagement(unittest.TestCase):
         self.assertFalse(is_compliant)
         self.assertIn("[SIA BLOCK]", modified_output)
 
+    def test_validate_profile_match_gate(self):
+        from sia.core.config import load_logic_gates
+        config = load_logic_gates("configs/eu_ai_act_full.yaml")
+        engine = RuleEvaluationEngine(config, "prod")
+
+        # Adult is representative -> allowed
+        res_allowed = engine.evaluate_ingress({"patient_profile": {"age_group": "adult"}, "prompt_text": "hello"})
+        self.assertTrue(res_allowed["allowed"])
+
+        # Neonatal is not representative -> blocked
+        res_blocked = engine.evaluate_ingress({"patient_profile": {"age_group": "neonatal"}, "prompt_text": "hello"})
+        self.assertFalse(res_blocked["allowed"])
+        self.assertEqual(res_blocked["trigger_paragraph"], "article_10_2")
+        self.assertIn("Training Data Under-Representativeness", res_blocked["trigger_reason"])
+
+    def test_block_ood_payload_gate(self):
+        from sia.core.config import load_logic_gates
+        config = load_logic_gates("configs/eu_ai_act_full.yaml")
+        engine = RuleEvaluationEngine(config, "prod")
+
+        # High ood_score -> blocked
+        res_ood = engine.evaluate_ingress({"ood_score": 0.9, "prompt_text": "hello"})
+        self.assertFalse(res_ood["allowed"])
+        self.assertEqual(res_ood["trigger_paragraph"], "article_15_1")
+        self.assertIn("Out-of-Distribution (OOD)", res_ood["trigger_reason"])
+
+        # Unallowed domain -> blocked
+        res_domain = engine.evaluate_ingress({"semantic_domain": "social_media", "prompt_text": "hello"})
+        self.assertFalse(res_domain["allowed"])
+        self.assertEqual(res_domain["trigger_paragraph"], "article_15_1")
+        self.assertIn("domain 'social_media' not allowed", res_domain["trigger_reason"])
+
+        # Allowed domain -> allowed
+        res_allowed = engine.evaluate_ingress({"semantic_domain": "clinical", "prompt_text": "hello"})
+        self.assertTrue(res_allowed["allowed"])
+
+    def test_append_confidence_telemetry(self):
+        from sia.core.config import load_logic_gates
+        config = load_logic_gates("configs/eu_ai_act_full.yaml")
+        engine = RuleEvaluationEngine(config, "prod")
+
+        is_compliant, modified_output, watermark, headers = engine.evaluate_egress(
+            output="Diagnosis suggests mild cold.",
+            confidence=0.95,
+            rag_verified=True
+        )
+
+        self.assertTrue(is_compliant)
+        self.assertIn("[Confidence Telemetry: Model Confidence = 0.95 | Grounding = Verified | Reliability: High]", modified_output)
+        self.assertIn("[Clinician Checklist: 1. Verify against source. 2. Inspect patient history. 3. Sign off manually.]", modified_output)
+
 if __name__ == "__main__":
     unittest.main()

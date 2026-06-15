@@ -1,7 +1,7 @@
-# Part 06 — HIPAA Technical Safeguards Evidence (OCR Report)
+# Part 07 — HIPAA Technical Safeguards Evidence (OCR Report)
 
-**Generated:** 2026-05-28 06:35 UTC  
-**[← Back to Index](index)**
+**Generated:** 2026-06-03 20:43 UTC  
+**[← Back to Index](00_index.md)**
 
 ## Immutable Archival & Access Control
 

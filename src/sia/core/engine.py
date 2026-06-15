@@ -138,6 +138,30 @@ class RuleEvaluationEngine:
 
         original_prompt = context.get("prompt_text", "")
         
+        # --- 2. Dataset Quality & Demographic Representativeness Check (Article 10.2 / HZ-24) ---
+        para_10_2 = self._get_para("article_10_data_governance", "article_10_2")
+        if para_10_2:
+            pm_rule = para_10_2.rules.get("rule_validate_profile_match")
+            if pm_rule and pm_rule.logic == "VALIDATE_PROFILE_MATCH":
+                profile = context.get("patient_profile") or context.get("subject_profile") or context.get("user_profile")
+                if profile:
+                    age_group = profile.get("age_group")
+                    subgroups = pm_rule.representative_subgroups or []
+                    if age_group and age_group not in subgroups:
+                        return self._block("article_10_2", f"Training Data Under-Representativeness: age group '{age_group}' not in representative indices", pm_rule.api_response_on_block or 400)
+
+        # --- 3. Out-of-Distribution Input Check (Article 15.1 / HZ-25) ---
+        para_15_1_ood = self._get_para("article_15_accuracy_robustness", "article_15_1")
+        if para_15_1_ood:
+            ood_rule = para_15_1_ood.rules.get("rule_block_ood_payload")
+            if ood_rule and ood_rule.logic == "BLOCK_OOD_PAYLOAD":
+                if context.get("ood_score", 0.0) > 0.8:
+                    return self._block("article_15_1", "Out-of-Distribution (OOD) Clinical Inputs: semantic anomaly detected", ood_rule.api_response_on_block or 400)
+                sem_domain = context.get("semantic_domain")
+                allowed_domains = ood_rule.allowed_semantic_domains or []
+                if sem_domain and sem_domain not in allowed_domains:
+                    return self._block("article_15_1", f"Out-of-Distribution (OOD) Clinical Inputs: domain '{sem_domain}' not allowed", ood_rule.api_response_on_block or 400)
+
         # Log privacy incidents based on the manifest
         manifest = context.get("privacy_manifest", {})
         if manifest.get("tier_1_phi"):
@@ -272,6 +296,15 @@ class RuleEvaluationEngine:
         explanation_log = f"\n\n[Explanation Log: Feature importance estimation complete. Confidence: {confidence:.2f}]"
         if is_compliant:
             modified_output += explanation_log
+
+        # ── Article 13.2: Confidence Telemetry Appender ───────────────────────
+        para_13_2 = self._get_para("article_13_transparency", "article_13_2")
+        if para_13_2 and is_compliant:
+            tel_rule = para_13_2.rules.get("rule_append_confidence_telemetry")
+            if tel_rule and tel_rule.logic == "APPEND_CONFIDENCE_TELEMETRY":
+                telemetry = f"\n\n[Confidence Telemetry: Model Confidence = {confidence:.2f} | Grounding = {'Verified' if rag_verified else 'Unverified'} | Reliability: High]"
+                checklist = "\n[Clinician Checklist: 1. Verify against source. 2. Inspect patient history. 3. Sign off manually.]"
+                modified_output += telemetry + checklist
 
         # ── Article 15.3: RAG Grounding, Attribution, Copyright ───────────────
         para_15_3 = self._get_para("article_15_accuracy_robustness", "article_15_3")

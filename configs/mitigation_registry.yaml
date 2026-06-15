@@ -1,0 +1,105 @@
+mitigations:
+  REDACT_OR_HASH:
+    name: "PII Redaction/Hashing Sanitizer"
+    layer: "Ingress (Sanitizer)"
+    action_summary: "Scans input payloads for general PII (emails, names, credit cards) and redacts or hashes them prior to LLM transit."
+  PSEUDONYMIZE_VAULT:
+    name: "PHI Pseudonymization Vault"
+    layer: "Ingress (Sanitizer)"
+    action_summary: "Pseudonymizes Tier 1 PHI data and stores keys in a local/cloud database, leaving tokenized placeholders in LLM prompts."
+  REGULATORY_ROUTER:
+    name: "Strictest-Rule-Wins Router"
+    layer: "Core Engine (Orchestration)"
+    action_summary: "Dynamically selects retention and privacy policies based on user location (e.g., EU GDPR Purge vs US HIPAA Vault)."
+  REQUIRE_TRACEABILITY_HASH:
+    name: "Immutable Cryptographic Trace Ledger"
+    layer: "Audit (Ledger)"
+    action_summary: "Hashes prompts, sanitized prompts, outputs, scores, and metadata using SHA-256 and records them to logs/audit_ledger.jsonl."
+  APPEND_WATERMARK:
+    name: "Transparency Content Watermarker"
+    layer: "Egress (Engine)"
+    action_summary: "Automatically appends clear machine and human-readable watermark disclosure to high-risk LLM outputs."
+  REQUIRE_HUMAN_VETO:
+    name: "Human-in-the-Loop Veto Gate"
+    layer: "Ingress (Engine)"
+    action_summary: "Triggers HTTP 202 and pauses request execution for mandatory manual clinician signature on high-risk task domains."
+  MONITOR_CONFIDENCE_DRIFT:
+    name: "Statistical Post-Market Drift Tracker"
+    layer: "Post-Market Monitoring"
+    action_summary: "Analyzes confidence score distributions over time and flags alerts if a shift indicative of dataset drift occurs."
+  BLOCK_AND_REWRITE:
+    name: "Egress Safe-State Rewrite Gate"
+    layer: "Egress (Engine)"
+    action_summary: "Intercepts non-compliant or hallucinated output structures and rewrites them into a pre-approved safe fallback message."
+  BLOCK_PROMPT_INJECTION:
+    name: "Adversarial Ingress Filter"
+    layer: "Ingress (Classifier)"
+    action_summary: "Checks input semantics against adversarial patterns and blocks jailbreak attempts or instruction overrides."
+  MONITOR_ANOMALIES:
+    name: "Payload Anomaly Detector"
+    layer: "Ingress (Classifier)"
+    action_summary: "Monitors payload size, special character density, and structural parameters to detect malicious input anomalies."
+  BLOCK_PROHIBITED_DOMAINS:
+    name: "Prohibited Application Domains Filter"
+    layer: "Ingress (Engine)"
+    action_summary: "Proactively blocks system utilization in banned target application domains (e.g. general biometric tracking)."
+  ENFORCE_TOKEN_LIMIT:
+    name: "Resource Protection Gate"
+    layer: "Ingress (Classifier)"
+    action_summary: "Rejects prompts that exceed token limits to prevent model denial of service or resource exhaustion."
+  ENFORCE_RATE_LIMIT:
+    name: "Inversion Protection Rate Limiter"
+    layer: "Ingress (Engine)"
+    action_summary: "Implements sliding window token-bucket limiting per client identity to prevent rate abuse and model extraction attempts."
+  BLOCK_PROHIBITED_PRACTICES:
+    name: "Prohibited AI Practice Gate"
+    layer: "Ingress (Engine)"
+    action_summary: "Blocks requests invoking subliminal, manipulative, or exploitative behavior patterns under Article 5."
+  BLOCK_SPECIAL_CATEGORY_DATA:
+    name: "Special Category Data Guard"
+    layer: "Ingress (Engine)"
+    action_summary: "Identifies and drops inputs attempting unauthorized processing of sensitive biometric, genetic, or political data."
+  APPEND_DISCLAIMER:
+    name: "Contextual Disclaimer Appender"
+    layer: "Egress (Engine)"
+    action_summary: "Appends clinical or legal-specific capability disclosures and safety warnings to outgoing text."
+  VALIDATE_INPUT_SCHEMA:
+    name: "Payload Schema Validator"
+    layer: "Ingress (Engine)"
+    action_summary: "Enforces that payloads conform to encoding constraints and limits prior to model submission."
+  REQUIRE_MINIMUM_CONFIDENCE:
+    name: "Egress Confidence Guard"
+    layer: "Egress (Engine)"
+    action_summary: "Enforces that model response confidence remains above the defined threshold, triggering fallback rewrites if violated."
+  REQUIRE_RAG_GROUNDING:
+    name: "Retrieval Grounding Verifier"
+    layer: "Egress (Engine)"
+    action_summary: "Validates that response contents are grounded in approved, indexed knowledge base sources to block hallucination."
+  REQUIRE_SOURCE_ATTRIBUTION:
+    name: "Inline Citation Appender"
+    layer: "Egress (Engine)"
+    action_summary: "Appends precise inline references/citations to output messages matching active knowledge base sources."
+  BLOCK_COPYRIGHTED_SOURCES:
+    name: "Copyright Infringement Filter"
+    layer: "Egress (Engine)"
+    action_summary: "Monitors outgoing content to verify that source attribution belongs to creative commons or approved domains only."
+  APPEND_MACHINE_READABLE_MARKER:
+    name: "Synthetic Media Header Marker"
+    layer: "Egress (Engine)"
+    action_summary: "Appends standard HTTP transparency headers (e.g. X-AI-Generated: True) to compliance payloads."
+  BLOCK_SYNTHETIC_MEDIA_REQUEST:
+    name: "Synthetic Impersonation Filter"
+    layer: "Ingress (Classifier)"
+    action_summary: "Blocks requests requesting generation of synthetic faces, deepfakes, or voice impersonations."
+  VALIDATE_PROFILE_MATCH:
+    name: "Subject Profile Representativeness Validator"
+    layer: "Ingress (Engine)"
+    action_summary: "Performs verification that user-profile demographic parameters correspond to training indices, flagging non-representative profiles."
+  BLOCK_OOD_PAYLOAD:
+    name: "Semantic OOD Input Deflector"
+    layer: "Ingress (Engine)"
+    action_summary: "Rejects input payloads that fall outside the model's semantic training boundaries to prevent silent failure."
+  APPEND_CONFIDENCE_TELEMETRY:
+    name: "Oversight Transparency Appender"
+    layer: "Egress (Engine)"
+    action_summary: "Appends clear reliability indicators and clinician validation checklists to diagnostics output structures."

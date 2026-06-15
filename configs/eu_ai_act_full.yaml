@@ -91,6 +91,15 @@ articles:
 
   article_10_data_governance:
     paragraphs:
+      article_10_2:
+        description: "Dataset quality, representativeness, and bias examination."
+        rules:
+          rule_validate_profile_match:
+            category: runtime_gate
+            logic: "VALIDATE_PROFILE_MATCH"
+            api_response_on_block: 400
+            representative_subgroups: ["adult", "geriatric", "pediatric"]
+
       article_10_2_f:
         description: "Examination of possible biases in data sets."
         rules:
@@ -170,6 +179,10 @@ articles:
             healthcare_disclaimer: "DISCLAIMER: This system cannot substitute for licensed medical advice."
             employment_disclaimer:  "DISCLAIMER: This output is advisory only and must be reviewed by a qualified HR professional."
             legal_disclaimer:       "DISCLAIMER: This system does not provide legal advice."
+          rule_append_confidence_telemetry:
+            category: runtime_gate
+            logic: "APPEND_CONFIDENCE_TELEMETRY"
+            api_response_on_block: 200
 
       article_13_3_b:
         description: "Specification of input data the system is designed to handle."
@@ -224,6 +237,11 @@ articles:
             api_response_on_block: 422
             min_confidence: 0.85
             fallback_action: "BLOCK_AND_REWRITE"
+          rule_block_ood_payload:
+            category: runtime_gate
+            logic: "BLOCK_OOD_PAYLOAD"
+            api_response_on_block: 400
+            allowed_semantic_domains: ["clinical", "compliance", "general_qa"]
 
       article_15_2:
         description: "Accuracy metrics must be declared in technical documentation."

@@ -11,7 +11,8 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 ROOT_DIR   = Path(__file__).parent.parent.parent.parent
-HAZARDS    = ROOT_DIR / "configs" / "iso_14971_hazards.yaml"
+HAZARDS    = ROOT_DIR / "configs" / "iso_risk_registry.yaml"
+MITIGATIONS = ROOT_DIR / "configs" / "mitigation_registry.yaml"
 AUDIT_LOG  = ROOT_DIR / "logs" / "audit_ledger.jsonl"
 INCIDENT_LOG = ROOT_DIR / "logs" / "incident_ledger.jsonl"
 REPORT_DIR = ROOT_DIR / "reports"
@@ -28,6 +29,12 @@ def rpn_badge(rpn: int) -> str:
 def load_hazards() -> Dict[str, Any]:
     with open(HAZARDS, "r", encoding="utf-8") as f:
         return yaml.safe_load(f).get("hazards", {})
+
+def load_mitigations() -> Dict[str, Any]:
+    if not MITIGATIONS.exists():
+        return {}
+    with open(MITIGATIONS, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f).get("mitigations", {})
 
 def load_jsonl(path: Path) -> List[Dict]:
     if not path.exists():
@@ -69,14 +76,15 @@ def event_table(events: List[Dict], cols: List[tuple]) -> str:
 
 # ── section builders ──────────────────────────────────────────────────────────
 
-def build_index(hazards, generated_at: str) -> str:
+def build_index(hazards, mitigations, generated_at: str) -> str:
     n = len(hazards)
     acceptable = sum(1 for h in hazards.values() if (h["residual_severity"] * h["residual_probability"]) <= 8)
+    
     return f"""# SIA Framework — Unified Regulatory Compliance Package (URCP)
 
 **Generated:** {generated_at}
 **System:** Sovereign Systemic Integrity Architecture (SIA) v0.2.0
-**Standard Alignment:** ISO 14971 · EU AI Act · GDPR · UK GDPR · HIPAA · ISO/IEC 42001
+**Standard Alignment:** ISO 14971 · EU AI Act · GDPR · UK GDPR · HIPAA · ISO/IEC 42001 · AAMI TIR34971
 
 ---
 
@@ -85,13 +93,14 @@ def build_index(hazards, generated_at: str) -> str:
 | Part | Document | Description |
 | --- | --- | --- |
 | Part 00 | [Index](00_index.md) | This document — master navigation |
-| Part 01 | [ISO 14971 Risk Management](01_iso14971.md) | Full hazard matrix + runtime event log |
-| Part 02 | [EU AI Act — Annex IV](02_eu_ai_act_annex_iv.md) | Article-by-article evidence + trigger log |
-| Part 03 | [ISO/IEC 42001 AI Management](03_iso42001.md) | AI Management System conformance |
-| Part 04 | [GDPR DPIA](04_gdpr_dpia.md) | Data Protection Impact Assessment + incident log |
-| Part 05 | [UK GDPR Assessment](05_uk_gdpr_assessment.md) | Post-Brexit delta analysis |
-| Part 06 | [HIPAA OCR Evidence](06_hipaa_ocr_evidence.md) | Technical Safeguards evidence + PHI event log |
-| Part 07 | [Cross-Reference Index](07_cross_reference_index.md) | Unified hazard → regulation traceability |
+| Part 01 | [Overview & Methodology](01_overview.md) | Framework description aligned with ISO 42001 & ISO 14971 |
+| Part 02 | [ISO 14971 Risk Management](02_iso14971.md) | Full hazard matrix + runtime event log |
+| Part 03 | [EU AI Act — Annex IV](03_eu_ai_act_annex_iv.md) | Article-by-article evidence + trigger log |
+| Part 04 | [ISO/IEC 42001 AI Management](04_iso42001.md) | AI Management System conformance |
+| Part 05 | [GDPR DPIA](05_gdpr_dpia.md) | Data Protection Impact Assessment + incident log |
+| Part 06 | [UK GDPR Assessment](06_uk_gdpr_assessment.md) | Post-Brexit delta analysis |
+| Part 07 | [HIPAA OCR Evidence](07_hipaa_ocr_evidence.md) | Technical Safeguards evidence + PHI event log |
+| Part 08 | [Cross-Reference Index](08_cross_reference_index.md) | Unified hazard → regulation traceability |
 
 ## Executive Summary
 
@@ -99,12 +108,76 @@ def build_index(hazards, generated_at: str) -> str:
 | --- | --- |
 | Total Identified Hazards | {n} |
 | Residual Risk: Acceptable | {acceptable} / {n} |
-| Regulations Covered | EU AI Act, GDPR, UK GDPR, HIPAA, ISO 14971, ISO/IEC 42001 |
+| Regulations Covered | EU AI Act, GDPR, UK GDPR, HIPAA, ISO 14971, ISO/IEC 42001, AAMI TIR34971 |
 | Privacy Architecture | Tier 1 (PHI) Pseudonymization + Tier 2 (PII) Redaction |
 | Regulatory Router | Strictest Rule Wins (EU Purge vs US Vault) |
 
 > All residual risks have been reduced to **Acceptable (RPN ≤ 8)** through deterministic Governance-as-Code controls.
 """
+
+
+def build_overview(hazards, mitigations, generated_at: str) -> str:
+    mitigation_lines = [
+        "## SIA Mitigation Logic & Controls Registry",
+        "",
+        "This registry maps all deterministic execution controls implemented across the SIA pipeline layers.",
+        "",
+        "| Control Key | Control Name | Pipeline Layer | Action Summary |",
+        "| --- | --- | --- | --- |"
+    ]
+    for key, data in sorted(mitigations.items()):
+        name = data.get("name", "—")
+        layer = data.get("layer", "—")
+        action = data.get("action_summary", "—").replace("|", "\\|")
+        mitigation_lines.append(f"| `{key}` | {name} | {layer} | {action} |")
+    
+    mitigations_summary_table = "\n".join(mitigation_lines)
+
+    return f"""# Part 01 — Overview & Methodology
+
+**Generated:** {generated_at}  
+**[← Back to Index](00_index.md)**
+
+---
+
+## 1. Introduction to the SIA Framework
+The **Sovereign Systemic Integrity Architecture (SIA)** is a production-grade **Governance-as-Code (GaC)** middleware designed to decouple AI system compliance from probabilistic model behavior. Traditional AI safety approaches rely on soft prompt engineering or model alignment (fine-tuning), both of which are non-deterministic and susceptible to instruction override (jailbreaking) or structural failures. 
+
+SIA installs a **deterministic cognitive firewall and supervisory mesh** around any AI model wrapper. Every ingress payload and egress inference is validated at runtime against binary legal, safety, and operational gates. Detailed mapping of each active safety control to international standards can be found in the [Part 08 — Cross-Reference Traceability Index](08_cross_reference_index.md).
+
+---
+
+## 2. Risk Management Methodology & Standard Alignment
+SIA bridges clinical/medical safety requirements with enterprise AI management structures through a dual alignment methodology:
+
+### A. ISO 14971 Integration (Hazard Analysis & RPN Reduction)
+Following **ISO 14971** risk management principles, SIA treats compliance breaches and safety failures as system hazards:
+1. **Risk Estimation & Pre-mitigation Evaluation**: Every potential failure mode (e.g., PII exposure, OOD clinical recommendations) is cataloged in the [Part 02 — ISO 14971 Risk Management Report](02_iso14971.md) with a Pre-mitigation Risk Priority Number (RPN) based on severity and probability.
+2. **Deterministic Control Mapping**: Every hazard is tied to a specific, executable control (e.g., `PSEUDONYMIZE_VAULT`, `BLOCK_OOD_PAYLOAD`).
+3. **Residual Risk Optimization**: Run-time constraints and validation filters successfully reduce all risk profiles to an **Acceptable level (Residual RPN ≤ 8)**.
+4. **Post-Market Surveillance (Article 72)**: Real-time incident logs are mapped back to hazard codes, enabling live feedback loops for clinical monitoring. For details on runtime anomalies, see the incident logs in [Part 02 — ISO 14971 Risk Management Report](02_iso14971.md) and [Part 03 — EU AI Act Conformance](03_eu_ai_act_annex_iv.md).
+
+### B. ISO/IEC 42001 Integration (AI Management System)
+SIA incorporates key requirements of the **ISO/IEC 42001:2023** standard for AI Management Systems (AIMS):
+1. **Ethical Constraints & Interested Parties (Clause 4.2)**: Codified location routing and domain restrictions. For conformance details, see [Part 04 — ISO/IEC 42001 AI Management System Conformance](04_iso42001.md).
+2. **AI System Lifecycle Governance (Clause 8.4)**: End-to-end telemetry auditing and logging of system state changes.
+3. **Data Governance & Dataset Quality (Clause Annex B.7)**: Dynamic validation of training demographic match (`VALIDATE_PROFILE_MATCH`) and real-time sanitizers.
+4. **Human Oversight & Veto (Clause 8.6)**: Decoupled Human-in-the-Loop review routing for high-risk Annex III applications, as detailed in [Part 03 — EU AI Act Conformance](03_eu_ai_act_annex_iv.md).
+5. **System Verification & Validation (Clause 8.5)**: The `Truth Razor` engine cross-references egress text against Authorized Truth-Centers.
+
+---
+
+## 3. Sovereign Stack Execution Pipeline
+The SIA pipeline operates across three main execution layers:
+- **Layer 1: Contextual Ingress Orchestrator**: Scans and sanitizes raw prompt text, detects prompt injections, checks for patient demographics mismatch, and validates demographic training match centroids. PII and PHI identification triggers are fully mapped in [Part 05 — GDPR Data Protection Impact Assessment (DPIA)](05_gdpr_dpia.md) and [Part 07 — HIPAA Technical Safeguards Evidence](07_hipaa_ocr_evidence.md).
+- **Layer 2: Core Governance Engine**: Determines jurisdiction policy retention locks (Regulatory Router) and reviews high-risk action flags. Policies dynamically handle differences between European regulations and post-Brexit deltas (see [Part 06 — UK GDPR Assessment](06_uk_gdpr_assessment.md)).
+- **Layer 3: Deterministic Egress Validator**: Verifies hallucination score thresholds, appends transparency watermarks, and attaches clinical validation checklists.
+
+---
+
+{mitigations_summary_table}
+"""
+
 
 
 def build_iso14971(hazards, incidents, max_events) -> str:
@@ -124,15 +197,18 @@ def build_iso14971(hazards, incidents, max_events) -> str:
             
     rows.sort(key=lambda r: parse_hz_id(r["id"]))
 
-    lines = ["# Part 01 — ISO 14971 Risk Management Report\n",
+    lines = ["# Part 02 — ISO 14971 Risk Management Report\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Hazard Traceability Matrix\n",
              "| Hazard ID | Failure Mode | Pre RPN | Control | Description | Post RPN | Status |",
              "| --- | --- | --- | --- | --- | --- | --- |"]
     for r in rows:
+        fm = r['failure_mode']
+        haz_desc = r.get('hazard_description', '—')
+        fm_detailed = f"**{fm}**<br/>{haz_desc}"
         desc = r.get('mitigation_description', '—').replace('|', '\\|')
-        lines.append(f"| **{r['id']}** | {r['failure_mode']} | **{r['pre_rpn']}** | `{r['sia_mitigation_logic']}` | {desc} | **{r['post_rpn']}** | {rpn_badge(r['post_rpn'])} |")
+        lines.append(f"| **{r['id']}** | {fm_detailed} | **{r['pre_rpn']}** | `{r['sia_mitigation_logic']}` | {desc} | **{r['post_rpn']}** | {rpn_badge(r['post_rpn'])} |")
 
     lines += ["", "## Runtime Risk Management Alerts (Post-Market Surveillance)\n",
               "| Timestamp | Incident Type | Hazard ID | Control | Details |",
@@ -187,9 +263,9 @@ def build_eu_ai_act(hazards, audit_events, max_events) -> str:
         "Art. 53": "GPAI Model Provider Obligations (Copyright)",
         "Art. 72": "Post-Market Monitoring System (Incident Logging)",
     }
-    lines = ["# Part 02 — EU AI Act (Annex IV) Conformance\n",
+    lines = ["# Part 03 — EU AI Act (Annex IV) Conformance\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Article Coverage Matrix\n",
              "| Article | Requirement | Hazard ID | Control | Description |",
              "| --- | --- | --- | --- | --- |"]
@@ -264,9 +340,9 @@ def build_gdpr(hazards, incidents, max_events) -> str:
         if cite != "—" or any(t in h.get("failure_mode","") for t in ["PII","PHI","Privacy","Retention","Special"]):
             privacy_hz[hz_id] = h
 
-    lines = ["# Part 04 — GDPR Data Protection Impact Assessment (DPIA)\n",
+    lines = ["# Part 05 — GDPR Data Protection Impact Assessment (DPIA)\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Legal Basis & Scope\n",
              "Processing of personal data is performed under **Article 6(1)(b)** (contract performance) and **Article 9(2)(h)** (healthcare). ",
              "This DPIA is required under **Article 35** due to large-scale processing of special category data.\n",
@@ -315,9 +391,9 @@ def build_gdpr(hazards, incidents, max_events) -> str:
 
 
 def build_uk_gdpr(hazards) -> str:
-    lines = ["# Part 05 — UK GDPR Assessment (Post-Brexit)\n",
+    lines = ["# Part 06 — UK GDPR Assessment (Post-Brexit)\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Delta Analysis: EU GDPR vs UK GDPR\n",
              "The UK GDPR (Data Protection Act 2018 + retained EU law) is substantively equivalent to EU GDPR in all areas relevant to this system. ",
              "Key divergences tracked by the SIA Regulatory Router:\n",
@@ -354,9 +430,9 @@ def build_hipaa(hazards, incidents, max_events) -> str:
         if cite != "—" or any(t in h.get("failure_mode","") for t in ["PHI","HIPAA","Privacy","Retention"]):
             phi_hz[hz_id] = h
 
-    lines = ["# Part 06 — HIPAA Technical Safeguards Evidence (OCR Report)\n",
+    lines = ["# Part 07 — HIPAA Technical Safeguards Evidence (OCR Report)\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Immutable Archival & Access Control\n",
              "Under the `HIPAA_RETENTION_LOCK` policy, the Regulatory Router ensures PHI is pseudonymized, ",
              "securely vaulted, and retained for the mandatory **6-year archival period** (§164.530(j)). ",
@@ -412,9 +488,9 @@ def build_iso42001(hazards) -> str:
         if clause != "—":
             clause_hz.setdefault(clause, []).append((hz_id, h))
 
-    lines = ["# Part 03 — ISO/IEC 42001 AI Management System Conformance\n",
+    lines = ["# Part 04 — ISO/IEC 42001 AI Management System Conformance\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
+             "**[← Back to Index](00_index.md)**\n",
              "## Scope\n",
              "ISO/IEC 42001:2023 establishes requirements for an AI Management System (AIMS). ",
              "The SIA Framework implements Governance-as-Code controls that directly satisfy the following clauses:\n",
@@ -437,7 +513,7 @@ def build_iso42001(hazards) -> str:
 
     lines += ["", "## Key Conformance Statements\n",
               "- **Clause 4.2 (Context)**: Ethical constraints are codified in `configs/eu_ai_act_full.yaml` and enforced at every request.",
-              "- **Clause 6.1.2 (Risk Assessment)**: All risks are documented in `configs/iso_14971_hazards.yaml` with pre/post RPN scores.",
+              "- **Clause 6.1.2 (Risk Assessment)**: All risks are documented in `configs/iso_risk_registry.yaml` with pre/post RPN scores.",
               "- **Clause 8.4 (Lifecycle)**: SIA wraps the AI model lifecycle with deterministic ingress and egress gates.",
               "- **Clause 8.6 (Human Oversight)**: Article 14.4 HITL gate enforces mandatory human review for Annex III decisions.",
               "- **Clause 9.1 (Monitoring)**: Post-market monitoring events are streamed live to `logs/audit_ledger.jsonl`.",
@@ -447,12 +523,12 @@ def build_iso42001(hazards) -> str:
 
 
 def build_cross_ref(hazards, audit_events) -> str:
-    lines = ["# Part 07 — Cross-Reference Traceability Index\n",
+    lines = ["# Part 08 — Cross-Reference Traceability Index\n",
              f"**Generated:** {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}  ",
-             "**[← Back to Index](index)**\n",
-             "This index maps every SIA control across all six regulatory frameworks simultaneously.\n",
-             "| Hazard ID | Control | Description | EU AI Act | GDPR | UK GDPR | HIPAA | ISO 42001 |",
-             "| --- | --- | --- | --- | --- | --- | --- | --- |"]
+             "**[← Back to Index](00_index.md)**\n",
+             "This index maps every SIA control across all regulatory frameworks and standards simultaneously.\n",
+             "| Hazard ID | Control | Description | EU AI Act | GDPR | HIPAA | ISO 42001 |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
     def parse_hz_id(hz_id):
         try:
             if hz_id.startswith("HZ-"):
@@ -468,7 +544,7 @@ def build_cross_ref(hazards, audit_events) -> str:
         lines.append(
             f"| **{hz_id}** | `{ctrl}` | {desc} "
             f"| {c.get('eu_ai_act','—')} | {c.get('gdpr','—')} "
-            f"| {c.get('uk_gdpr','—')} | {c.get('hipaa','—')} "
+            f"| {c.get('hipaa','—')} "
             f"| {c.get('iso_42001','—')} |"
         )
     return "\n".join(lines)
@@ -487,6 +563,7 @@ def main():
         sys.exit(1)
 
     hazards      = load_hazards()
+    mitigations  = load_mitigations()
     audit_events = load_jsonl(AUDIT_LOG)
     incidents    = load_jsonl(INCIDENT_LOG)
     max_ev       = args.max_events
@@ -496,14 +573,15 @@ def main():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
     sections = {
-        "00_index.md":             build_index(hazards, generated_at),
-        "01_iso14971.md":          build_iso14971(hazards, incidents, max_ev),
-        "02_eu_ai_act_annex_iv.md": build_eu_ai_act(hazards, audit_events, max_ev),
-        "03_iso42001.md":          build_iso42001(hazards),
-        "04_gdpr_dpia.md":         build_gdpr(hazards, incidents, max_ev),
-        "05_uk_gdpr_assessment.md": build_uk_gdpr(hazards),
-        "06_hipaa_ocr_evidence.md": build_hipaa(hazards, incidents, max_ev),
-        "07_cross_reference_index.md": build_cross_ref(hazards, audit_events),
+        "00_index.md":             build_index(hazards, mitigations, generated_at),
+        "01_overview.md":          build_overview(hazards, mitigations, generated_at),
+        "02_iso14971.md":          build_iso14971(hazards, incidents, max_ev),
+        "03_eu_ai_act_annex_iv.md": build_eu_ai_act(hazards, audit_events, max_ev),
+        "04_iso42001.md":          build_iso42001(hazards),
+        "05_gdpr_dpia.md":         build_gdpr(hazards, incidents, max_ev),
+        "06_uk_gdpr_assessment.md": build_uk_gdpr(hazards),
+        "07_hipaa_ocr_evidence.md": build_hipaa(hazards, incidents, max_ev),
+        "08_cross_reference_index.md": build_cross_ref(hazards, audit_events),
     }
 
     for filename, content in sections.items():
@@ -514,9 +592,9 @@ def main():
 
     # Keep legacy flat files pointing to URCP
     for legacy, urcp_section in [
-        ("ISO14971_risk_management_report.md", "01_iso14971.md"),
-        ("DPA_DPIA_report.md",                 "04_gdpr_dpia.md"),
-        ("OCR_HIPAA_evidence.md",              "06_hipaa_ocr_evidence.md"),
+        ("ISO14971_risk_management_report.md", "02_iso14971.md"),
+        ("DPA_DPIA_report.md",                 "05_gdpr_dpia.md"),
+        ("OCR_HIPAA_evidence.md",              "07_hipaa_ocr_evidence.md"),
     ]:
         stub = f"# Redirected\nThis report has moved to the Unified Regulatory Compliance Package.\n\nSee: [reports/urcp/{urcp_section}](urcp/{urcp_section})\n"
         with open(REPORT_DIR / legacy, "w", encoding="utf-8") as f:

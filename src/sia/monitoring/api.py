@@ -55,30 +55,32 @@ _URCP_DIR = _ROOT_DIR / "reports" / "urcp"
 
 _URCP_SECTIONS = {
     "index":                ("00_index.md",              "Compliance Package Index",    "📋"),
-    "iso14971":             ("01_iso14971.md",           "ISO 14971 Risk Management",   "🛡"),
-    "eu_ai_act_annex_iv":   ("02_eu_ai_act_annex_iv.md", "EU AI Act — Annex IV",        "📄"),
-    "iso42001":             ("03_iso42001.md",           "ISO/IEC 42001 AIMS",          "🤖"),
-    "gdpr_dpia":            ("04_gdpr_dpia.md",          "GDPR DPIA",                   "🇪🇺"),
-    "uk_gdpr_assessment":   ("05_uk_gdpr_assessment.md", "UK GDPR Assessment",          "🇬🇧"),
-    "hipaa_ocr_evidence":   ("06_hipaa_ocr_evidence.md", "HIPAA OCR Evidence",          "🇺🇸"),
-    "cross_reference_index":("07_cross_reference_index.md", "Cross-Reference Index",   "🔗"),
+    "overview":             ("01_overview.md",           "Overview & Methodology",      "📖"),
+    "iso14971":             ("02_iso14971.md",           "ISO 14971 Risk Management",   "🛡"),
+    "eu_ai_act_annex_iv":   ("03_eu_ai_act_annex_iv.md", "EU AI Act — Annex IV",        "📄"),
+    "iso42001":             ("04_iso42001.md",           "ISO/IEC 42001 AIMS",          "🤖"),
+    "gdpr_dpia":            ("05_gdpr_dpia.md",          "GDPR DPIA",                   "🇪🇺"),
+    "uk_gdpr_assessment":   ("06_uk_gdpr_assessment.md", "UK GDPR Assessment",          "🇬🇧"),
+    "hipaa_ocr_evidence":   ("07_hipaa_ocr_evidence.md", "HIPAA OCR Evidence",          "🇺🇸"),
+    "cross_reference_index":("08_cross_reference_index.md", "Cross-Reference Index",   "🔗"),
 }
 
 _REPORT_NAV = (
     '<a href="/report/urcp/index" class="nav-home">📋&nbsp;URCP&nbsp;Index</a>'
+    '<a href="/report/urcp/overview">📖 Part 01 — Overview</a>'
     '<span class="nav-sep"></span>'
     '<span class="nav-group">Risk &amp; AI Management</span>'
-    '<a href="/report/urcp/iso14971">🛡 Part 01 — ISO 14971</a>'
-    '<a href="/report/urcp/eu_ai_act_annex_iv">📄 Part 02 — EU AI Act</a>'
-    '<a href="/report/urcp/iso42001">🤖 Part 03 — ISO 42001</a>'
+    '<a href="/report/urcp/iso14971">🛡 Part 02 — ISO 14971</a>'
+    '<a href="/report/urcp/eu_ai_act_annex_iv">📄 Part 03 — EU AI Act</a>'
+    '<a href="/report/urcp/iso42001">🤖 Part 04 — ISO 42001</a>'
     '<span class="nav-sep"></span>'
     '<span class="nav-group">Privacy</span>'
-    '<a href="/report/urcp/gdpr_dpia">🇪🇺 Part 04 — GDPR</a>'
-    '<a href="/report/urcp/uk_gdpr_assessment">🇬🇧 Part 05 — UK GDPR</a>'
-    '<a href="/report/urcp/hipaa_ocr_evidence">🇺🇸 Part 06 — HIPAA</a>'
+    '<a href="/report/urcp/gdpr_dpia">🇪🇺 Part 05 — GDPR</a>'
+    '<a href="/report/urcp/uk_gdpr_assessment">🇬🇧 Part 06 — UK GDPR</a>'
+    '<a href="/report/urcp/hipaa_ocr_evidence">🇺🇸 Part 07 — HIPAA</a>'
     '<span class="nav-sep"></span>'
     '<span class="nav-group">Traceability</span>'
-    '<a href="/report/urcp/cross_reference_index">🔗 Part 07 — Cross-Ref</a>'
+    '<a href="/report/urcp/cross_reference_index">🔗 Part 08 — Cross-Ref</a>'
 )
 
 _REPORT_CSS = (
@@ -142,8 +144,11 @@ def _md_to_html(md: str, title: str) -> str:
 
     def _format_inline(text):
         text = _h.escape(text)
+        text = text.replace("&lt;br/&gt;", "<br/>").replace("&lt;br&gt;", "<br/>")
+        text = text.replace("&amp;le;", "&le;").replace("&amp;amp;", "&amp;")
         text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
         text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+        text = re.sub(r"(?<!\w)_([^_]+)_(?!\w)", r"<em>\1</em>", text)
         # Style 'Back to Index' as a button
         if "Back to Index" in text:
              text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)",
@@ -162,12 +167,25 @@ def _md_to_html(md: str, title: str) -> str:
             
         if line.startswith("```"):
             if in_code:
-                out.append("</pre>"); in_code = False
+                if in_code == "mermaid":
+                    out.append("</div>")
+                else:
+                    out.append("</pre>")
+                in_code = False
             else:
-                out.append("<pre>"); in_code = True
+                if "mermaid" in line:
+                    out.append('<div class="mermaid">')
+                    in_code = "mermaid"
+                else:
+                    out.append("<pre>")
+                    in_code = True
             continue
         if in_code:
-            out.append(_h.escape(raw)); continue
+            if in_code == "mermaid":
+                out.append(raw)
+            else:
+                out.append(_h.escape(raw))
+            continue
             
         if line.startswith("| "):
             cells = [c.strip() for c in line.strip().strip("|").split("|")]
@@ -202,7 +220,12 @@ def _md_to_html(md: str, title: str) -> str:
             f"border-radius:20px;color:#6366f1;font-size:12px;font-weight:600;margin:10px 0;"
             f"text-decoration:none!important;transition:all .2s}}\n"
             f".back-btn:hover{{background:rgba(99,102,241,0.2);border-color:#6366f1;color:#818cf8}}"
-            f"</style></head><body><nav>{_REPORT_NAV}</nav>{body}</body></html>")
+            f"</style>"
+            f"<script type='module'>\n"
+            f"  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';\n"
+            f"  mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});\n"
+            f"</script>\n"
+            f"</head><body><nav>{_REPORT_NAV}</nav>{body}</body></html>")
 
 
 @app.get("/report/urcp/{section}")
@@ -528,4 +551,4 @@ async def get_iso14971_report():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8015)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unified Privacy-as-Safety (GDPR & HIPAA)** — Unified Sensitive Data Schema with Tier 1 (PHI/Special Category) and Tier 2 (General PII) tracking.
 - **Unified Regulatory Compliance Package (URCP)** — Comprehensive report generation covering GDPR DPIA, UK GDPR Assessment, and HIPAA OCR Evidence.
 - `configs/privacy_profiles.yaml` — Configurable governance policies for location-based regulatory routing (e.g., EU Purge, US Vault).
-- HZ-22 (Unauthorized PHI/Special Category Exposure) and HZ-23 (Regulatory Retention Conflict) introduced to `iso_14971_hazards.yaml`.
+- HZ-22 (Unauthorized PHI/Special Category Exposure) and HZ-23 (Regulatory Retention Conflict) introduced to `iso_risk_registry.yaml`.
 - Traceability ledger enhanced to support `privacy_manifest` field.
 
 ### Changed
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **ISO 14971 Risk Management Module** — Full architectural separation of hazard assessment from operational rules.
-- `configs/iso_14971_hazards.yaml` — Centralized hazard registry for 21 identified failure modes.
+- `configs/iso_risk_registry.yaml` — Centralized hazard registry for 21 identified failure modes (renamed from `iso_14971_hazards.yaml` for dual ISO 14971 and ISO/IEC 42001 applicability).
 - `src/sia/cli/generate_risk_report.py` — Automated ISO 14971 Risk Management Report generator.
 - **Dynamic Post-Market Monitoring (PMM)** — Automatic tracing of runtime incidents to specific Hazard IDs in compliance reports.
 - `/report/iso14971` endpoint — On-demand compliance evidence generation for regulators.

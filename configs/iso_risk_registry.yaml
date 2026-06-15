@@ -366,3 +366,54 @@ hazards:
       uk_gdpr: "Art. 9 (Biometric Data)"
       hipaa: "N/A"
       iso_42001: "Clause 4.2 (Ethical Constraints)"
+
+  HZ-24:
+    failure_mode: "Training Data Under-Representativeness"
+    hazard_description: "Clinical demographic mismatch or missing clinical subgroups in training distributions leading to biased or unsafe outputs for specific patient populations."
+    pre_mitigation_severity: 4
+    pre_mitigation_probability: 4
+    sia_mitigation_logic: "VALIDATE_PROFILE_MATCH"
+    mitigation_description: "Active validation mapping clinical subject demographics to the training index to flag low representation."
+    residual_severity: 4
+    residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 10.2 (Dataset Quality)"
+      gdpr: "Art. 5(1)(a) (Fairness)"
+      uk_gdpr: "Art. 5(1)(a) (Fairness)"
+      hipaa: "N/A"
+      iso_42001: "Clause 8.4 (AI System Lifecycle), Annex B.7 (Data Governance)"
+      aami_tir34971: "Section 5.2 (Data-related hazards — bias)"
+
+  HZ-25:
+    failure_mode: "Out-of-Distribution (OOD) Clinical Inputs"
+    hazard_description: "Clinical inputs fall outside the model's training distribution, resulting in silent failures or unsafe clinical recommendations."
+    pre_mitigation_severity: 5
+    pre_mitigation_probability: 4
+    sia_mitigation_logic: "BLOCK_OOD_PAYLOAD"
+    mitigation_description: "Semantic distance filter calculating input distance to training centroids and redirecting anomalies to a fallback state."
+    residual_severity: 5
+    residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 15.1 (Accuracy & Robustness)"
+      gdpr: "Art. 32 (Security of Processing)"
+      uk_gdpr: "Art. 32 (Security of Processing)"
+      hipaa: "N/A"
+      iso_42001: "Clause 8.5 (AI System Verification), Annex B.8 (AI System Robustness)"
+      aami_tir34971: "Section 5.4 (Model-related hazards — OOD)"
+
+  HZ-26:
+    failure_mode: "Clinical Automation Bias & UI Mismatch"
+    hazard_description: "Clinicians over-rely on AI recommendations or misinterpret low confidence outputs due to opaque UI design."
+    pre_mitigation_severity: 4
+    pre_mitigation_probability: 4
+    sia_mitigation_logic: "APPEND_CONFIDENCE_TELEMETRY"
+    mitigation_description: "Exposes system confidence ratings and appends clinician verification requests to all diagnostic output structures."
+    residual_severity: 4
+    residual_probability: 1
+    regulatory_citations:
+      eu_ai_act: "Art. 13 (Transparency), Art. 14 (Human Oversight)"
+      gdpr: "Art. 22 (Automated Decision-Making)"
+      uk_gdpr: "Art. 22 (Automated Decision-Making)"
+      hipaa: "N/A"
+      iso_42001: "Clause 8.6 (Human Oversight), Annex B.6 (Human Oversight)"
+      aami_tir34971: "Section 6.2 (User Interface & Automation Bias)"

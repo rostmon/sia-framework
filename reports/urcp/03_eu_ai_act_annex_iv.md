@@ -1,7 +1,7 @@
-# Part 02 — EU AI Act (Annex IV) Conformance
+# Part 03 — EU AI Act (Annex IV) Conformance
 
-**Generated:** 2026-05-28 06:35 UTC  
-**[← Back to Index](index)**
+**Generated:** 2026-06-03 20:43 UTC  
+**[← Back to Index](00_index.md)**
 
 ## Article Coverage Matrix
 
@@ -11,17 +11,20 @@
 | Art. 5(1)(a-c) (Prohibited Practices) | Prohibited Practices (Subliminal, Vulnerability Exploitation) | HZ-12 | `BLOCK_PROHIBITED_PRACTICES` | Proactively drops interactions matching unequivocally prohibited AI practices. |
 | Art. 9 (Quality Management) | Risk Management System | HZ-23 | `REGULATORY_ROUTER` | SIA Regulatory Router applies location-based 'Strictest Rule Wins' policy (e.g., US Vault, EU Purge). |
 | Art. 10 (Data Governance) | Data & Data Governance (Dataset Quality) | HZ-01 | `REDACT_OR_HASH` | Dynamic ingress sanitizer that redacts general PII before network transit. |
+| Art. 10.2 (Dataset Quality) | Data & Data Governance (Dataset Quality) | HZ-24 | `VALIDATE_PROFILE_MATCH` | Active validation mapping clinical subject demographics to the training index to flag low representation. |
 | Art. 10.5 (Special Category Data) | Data & Data Governance (Special Category Processing) | HZ-22 | `PSEUDONYMIZE_VAULT` | Zero-Trust Supervisory Mesh encrypts identifiers, separating keys for logic-based storage (Vault vs. Purge). |
 | Art. 10.5 (Special Category Data) | Data & Data Governance (Special Category Processing) | HZ-13 | `BLOCK_SPECIAL_CATEGORY_DATA` | Blocks inputs containing health, genetic, racial, or political data unless strictly necessary. |
 | Art. 12 (Record-Keeping) | Technical Documentation & Record-Keeping | HZ-02 | `REQUIRE_TRACEABILITY_HASH` | Traceability engine hashes all system interactions with SHA-256 into the immutable audit ledger. |
 | Art. 13 (Transparency) | Transparency & Provision of Information to Users | HZ-03 | `APPEND_WATERMARK` | Transparency engine automatically appends clear machine and human-readable warnings to compliant outputs. |
 | Art. 13 (Transparency & Information) | Transparency & Provision of Information to Users | HZ-14 | `APPEND_DISCLAIMER` | Dynamically appends Annex III specific disclaimers (e.g., healthcare, legal) to output. |
 | Art. 13 (Transparency) | Transparency & Provision of Information to Users | HZ-18 | `REQUIRE_SOURCE_ATTRIBUTION` | Requires inline attribution/citation of the exact knowledge base source. |
+| Art. 13 (Transparency), Art. 14 (Human Oversight) | Transparency & Provision of Information to Users | HZ-26 | `APPEND_CONFIDENCE_TELEMETRY` | Exposes system confidence ratings and appends clinician verification requests to all diagnostic output structures. |
 | Art. 14.4 (Human Oversight — Annex III) | Human Oversight (Mandatory Review & Veto) | HZ-04 | `REQUIRE_HUMAN_VETO` | Human-in-the-Loop gate triggering an HTTP 202 to pause execution for a mandatory human signature on Annex III tasks. |
 | Art. 15.1 (Accuracy & Robustness) | Accuracy & Robustness Compliance | HZ-06 | `BLOCK_AND_REWRITE` | Truth Razor grounding engine requires a minimum confidence threshold, rewriting failures into a safe deterministic fallback. |
 | Art. 15.1 (Accuracy & Robustness) | Accuracy & Robustness Compliance | HZ-15 | `VALIDATE_INPUT_SCHEMA` | Validates input token length and encodings (e.g., utf-8) per request. |
 | Art. 15.1 (Accuracy) | Accuracy & Robustness Compliance | HZ-16 | `REQUIRE_MINIMUM_CONFIDENCE` | Enforces a minimum confidence threshold on outputs before they can be returned. |
 | Art. 15.1 (Accuracy & Robustness) | Accuracy & Robustness Compliance | HZ-17 | `REQUIRE_RAG_GROUNDING` | Ensures outputs are grounded in approved Retrieval-Augmented Generation sources. |
+| Art. 15.1 (Accuracy & Robustness) | Accuracy & Robustness Compliance | HZ-25 | `BLOCK_OOD_PAYLOAD` | Semantic distance filter calculating input distance to training centroids and redirecting anomalies to a fallback state. |
 | Art. 15.3 (Cybersecurity) | Cybersecurity & Availability Assurance | HZ-07 | `BLOCK_PROMPT_INJECTION` | Adversarial intent classifier that blocks inputs matching known jailbreak or instruction-override patterns. |
 | Art. 15.3 (Cybersecurity & Availability) | Cybersecurity & Availability Assurance | HZ-10 | `ENFORCE_TOKEN_LIMIT` | Limits the maximum number of tokens per request to prevent infrastructure exhaustion and buffer overflows. |
 | Art. 15.3 (Cybersecurity) | Cybersecurity & Availability Assurance | HZ-11 | `ENFORCE_RATE_LIMIT` | In-memory sliding window rate limiter enforcing maximum requests per minute per client session. |
