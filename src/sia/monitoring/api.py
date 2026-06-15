@@ -209,6 +209,10 @@ def _md_to_html(md: str, title: str, combined: bool = False) -> str:
         if not line:
             continue
             
+        if line.startswith("<") and line.endswith(">"):
+            out.append(raw)
+            continue
+            
         if line.startswith("```"):
             if in_code:
                 if in_code == "mermaid":
