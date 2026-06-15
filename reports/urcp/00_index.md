@@ -1,6 +1,6 @@
 # SIA Framework — Unified Regulatory Compliance Package (URCP)
 
-**Generated:** 2026-06-03 20:43 UTC
+**Generated:** 2026-06-15 06:43 UTC
 **System:** Sovereign Systemic Integrity Architecture (SIA) v0.2.0
 **Standard Alignment:** ISO 14971 · EU AI Act · GDPR · UK GDPR · HIPAA · ISO/IEC 42001 · AAMI TIR34971
 

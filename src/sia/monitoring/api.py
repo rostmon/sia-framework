@@ -20,7 +20,10 @@ sys.path.insert(0, str(_ROOT_DIR / "src"))
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+import zipfile
+import io
+from datetime import datetime
 from pydantic import BaseModel
 import uvicorn
 
@@ -121,12 +124,45 @@ _REPORT_CSS = (
     ".nav-sep{width:1px;height:20px;background:#30363d;margin:0 2px}"
     ".nav-group{font-size:9px;text-transform:uppercase;letter-spacing:.8px;"
     "color:#484f58;padding:0 4px;font-weight:600;align-self:center}"
+    "@media print{"
+    "body{background:#ffffff!important;color:#000000!important;padding:15px!important;max-width:100%!important;font-size:12px!important}"
+    "nav, .back-btn{display:none!important}"
+    "h1{color:#000000!important;border-bottom:1px solid #e1e4e8!important}"
+    "h2{color:#000000!important;border-bottom:none!important}"
+    "h3{color:#000000!important}"
+    "table, th, td{border-color:#e1e4e8!important;color:#000000!important}"
+    "th{background:#f6f8fa!important;color:#000000!important}"
+    "code{background:#f6f8fa!important;color:#032f62!important;border:1px solid #e1e4e8!important}"
+    "pre{background:#f6f8fa!important;border-color:#e1e4e8!important;color:#032f62!important}"
+    "blockquote{background:#f6f8fa!important;border-left-color:#0366d6!important;color:#586069!important}"
+    "tr:hover td{background:none!important}"
+    "}"
 )
 
 
 _FILENAME_TO_SECTION = {v[0]: k for k, v in _URCP_SECTIONS.items()}
 
-def _md_to_html(md: str, title: str) -> str:
+_REPORT_NAV_COMBINED = (
+    '<a href="#index" class="nav-home">📋&nbsp;URCP&nbsp;Index</a>'
+    '<a href="#overview">📖 Part 01 — Overview</a>'
+    '<span class="nav-sep"></span>'
+    '<span class="nav-group">Risk &amp; AI Management</span>'
+    '<a href="#iso14971">🛡 Part 02 — ISO 14971</a>'
+    '<a href="#eu_ai_act_annex_iv">📄 Part 03 — EU AI Act</a>'
+    '<a href="#iso42001">🤖 Part 04 — ISO 42001</a>'
+    '<span class="nav-sep"></span>'
+    '<span class="nav-group">Privacy</span>'
+    '<a href="#gdpr_dpia">🇪🇺 Part 05 — GDPR</a>'
+    '<a href="#uk_gdpr_assessment">🇬🇧 Part 06 — UK GDPR</a>'
+    '<a href="#hipaa_ocr_evidence">🇺🇸 Part 07 — HIPAA</a>'
+    '<span class="nav-sep"></span>'
+    '<span class="nav-group">Traceability</span>'
+    '<a href="#cross_reference_index">🔗 Part 08 — Cross-Ref</a>'
+    '<span class="nav-sep"></span>'
+    '<a href="javascript:window.print()" class="nav-home" style="background:linear-gradient(135deg,#059669,#047857)!important; border-color:#059669!important; color:#a7f3d0!important; cursor:pointer;">🖨️&nbsp;Save&nbsp;as&nbsp;PDF</a>'
+)
+
+def _md_to_html(md: str, title: str, combined: bool = False) -> str:
     import re, html as _h
     lines = md.split("\n")
     out, in_table, in_code = [], False, False
@@ -134,6 +170,14 @@ def _md_to_html(md: str, title: str) -> str:
     def _href(url):
         if url.startswith("http") or url.startswith("/"):
             return url
+        if combined:
+            if url in _FILENAME_TO_SECTION:
+                sect = _FILENAME_TO_SECTION[url]
+                if sect == "index": return "#index"
+                return f"#{sect}"
+            slug = url.replace(".md", "")
+            slug = re.sub(r"^\d+_", "", slug).replace("_", "-")
+            return f"#{slug}"
         # Check if it's a known filename first
         if url in _FILENAME_TO_SECTION:
             return f"/report/urcp/{_FILENAME_TO_SECTION[url]}"
@@ -213,6 +257,7 @@ def _md_to_html(md: str, title: str) -> str:
     if in_table:
         out.append("</tbody></table>")
     body = "\n".join(out)
+    nav_bar = _REPORT_NAV_COMBINED if combined else _REPORT_NAV
     return (f"<!DOCTYPE html><html><head><meta charset='utf-8'>"
             f"<title>SIA — {title}</title><style>{_REPORT_CSS}\n"
             f".back-btn{{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;"
@@ -225,7 +270,7 @@ def _md_to_html(md: str, title: str) -> str:
             f"  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';\n"
             f"  mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});\n"
             f"</script>\n"
-            f"</head><body><nav>{_REPORT_NAV}</nav>{body}</body></html>")
+            f"</head><body><nav>{nav_bar}</nav>{body}</body></html>")
 
 
 @app.get("/report/urcp/{section}")
@@ -245,6 +290,52 @@ async def get_urcp_section(section: str):
 @app.get("/report/urcp")
 async def get_urcp_index():
     return await get_urcp_section("index")
+
+
+_URCP_ORDER = [
+    "index", "overview", "iso14971", "eu_ai_act_annex_iv", 
+    "iso42001", "gdpr_dpia", "uk_gdpr_assessment", "hipaa_ocr_evidence", "cross_reference_index"
+]
+
+@app.get("/report/urcp/export/zip")
+async def download_urcp_zip():
+    if not _URCP_DIR.exists() or not list(_URCP_DIR.glob("*.md")):
+        import subprocess
+        subprocess.run([sys.executable, str(_ROOT_DIR / "src" / "sia" / "cli" / "generate_risk_report.py")])
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        for file_path in sorted(_URCP_DIR.glob("*.md")):
+            zip_file.write(file_path, arcname=file_path.name)
+            
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": f"attachment; filename=sia_urcp_compliance_package_{datetime.utcnow().strftime('%Y%m%d')}.zip"}
+    )
+
+@app.get("/report/urcp/export/html")
+async def get_urcp_combined_html():
+    if not _URCP_DIR.exists() or not list(_URCP_DIR.glob("*.md")):
+        import subprocess
+        subprocess.run([sys.executable, str(_ROOT_DIR / "src" / "sia" / "cli" / "generate_risk_report.py")])
+
+    combined_md_parts = []
+    for section_key in _URCP_ORDER:
+        filename, title, _ = _URCP_SECTIONS[section_key]
+        path = _URCP_DIR / filename
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+                # Inject a unique section anchor
+                anchor = f"\n<div id='{section_key}'></div>\n\n"
+                # Clean up "Back to Index"
+                content_cleaned = "\n".join([line for line in content.split("\n") if "Back to Index" not in line])
+                combined_md_parts.append(anchor + content_cleaned)
+
+    combined_md = "\n\n<hr style='border-top: 2px dashed #30363d; margin: 3em 0;' />\n\n".join(combined_md_parts)
+    return HTMLResponse(content=_md_to_html(combined_md, "Unified Regulatory Compliance Package", combined=True))
 
 
 # Legacy routes → redirect to URCP

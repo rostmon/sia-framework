@@ -1,6 +1,6 @@
 # Part 05 — GDPR Data Protection Impact Assessment (DPIA)
 
-**Generated:** 2026-06-03 20:43 UTC  
+**Generated:** 2026-06-15 06:43 UTC  
 **[← Back to Index](00_index.md)**
 
 ## Legal Basis & Scope

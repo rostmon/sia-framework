@@ -1,6 +1,6 @@
 # Part 08 — Cross-Reference Traceability Index
 
-**Generated:** 2026-06-03 20:43 UTC  
+**Generated:** 2026-06-15 06:43 UTC  
 **[← Back to Index](00_index.md)**
 
 This index maps every SIA control across all regulatory frameworks and standards simultaneously.
