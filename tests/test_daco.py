@@ -10,7 +10,7 @@ from sia.traceability.ledger import AuditLedger
 class TestDACO(unittest.TestCase):
     def setUp(self):
         self.temp_dir = Path(tempfile.mkdtemp())
-        self.key_path = self.temp_dir / "daco_officer.key"
+        self.pem_path = self.temp_dir / "daco_officer.pem"
         self.blockchain_path = self.temp_dir / "daco_blockchain.jsonl"
         self.ledger_path = self.temp_dir / "audit_ledger.jsonl"
 
@@ -19,21 +19,24 @@ class TestDACO(unittest.TestCase):
 
     def test_key_ring_creation_and_persistence(self):
         # First creation generates key
-        ring1 = DACOKeyRing(key_path=self.key_path)
-        self.assertTrue(self.key_path.exists())
-        self.assertTrue(ring1.did.startswith("did:daco:"))
+        ring1 = DACOKeyRing(pem_path=self.pem_path)
+        self.assertTrue(self.pem_path.exists())
+        self.assertTrue(ring1.did.startswith("did:ethr:"))
+        self.assertTrue(ring1.address.startswith("0x"))
+        self.assertEqual(len(ring1.address), 42)
         
         # Second creation loads existing key (deterministic identity)
-        ring2 = DACOKeyRing(key_path=self.key_path)
+        ring2 = DACOKeyRing(pem_path=self.pem_path)
         self.assertEqual(ring1.did, ring2.did)
         self.assertEqual(ring1.address, ring2.address)
 
     def test_signature_verification(self):
-        ring = DACOKeyRing(key_path=self.key_path)
+        ring = DACOKeyRing(pem_path=self.pem_path)
         payload = {"data": "clinical_compliance", "value": 98.5}
         
         sig = ring.sign_payload(payload)
-        self.assertTrue(sig.startswith("daco_sig:"))
+        # Signature is a hex string
+        self.assertTrue(len(sig) > 0)
         self.assertTrue(ring.verify_payload(payload, sig))
         
         # Altered payload should fail verification
@@ -65,7 +68,7 @@ class TestDACO(unittest.TestCase):
         # Setup AuditLedger pointing to temp paths
         ledger = AuditLedger(db_path=str(self.ledger_path))
         # Point its sub-modules to our temp paths
-        ledger.keyring = DACOKeyRing(key_path=self.key_path)
+        ledger.keyring = DACOKeyRing(pem_path=self.pem_path)
         ledger.anchor = BlockchainAnchor(db_path=self.blockchain_path)
         
         # Record 4 events: shouldn't trigger block 1 yet

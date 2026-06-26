@@ -1,48 +1,56 @@
 import os
 import json
-import hmac
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
+
+from ecdsa import SigningKey, VerifyingKey, SECP256k1, BadSignatureError
 
 _ROOT = Path(__file__).resolve().parent.parent.parent.parent
-KEY_PATH = _ROOT / "logs" / "daco_officer.key"
+PEM_PATH = _ROOT / "logs" / "daco_officer.pem"
 BLOCKCHAIN_PATH = _ROOT / "logs" / "daco_blockchain.jsonl"
 
 class DACOKeyRing:
-    """Manages the decentralized identity (DID) and key material of the Compliance Officer."""
-    def __init__(self, key_path: Path = KEY_PATH):
-        self.key_path = key_path
-        self.secret_key = self._load_or_create_key()
-        # did:daco:<address> based on the hash of the key
-        self.address = hashlib.sha256(self.secret_key).hexdigest()[:24]
-        self.did = f"did:daco:{self.address}"
+    """Manages the decentralized identity (DID) and ECDSA secp256k1 keys of the Compliance Officer."""
+    def __init__(self, pem_path: Path = PEM_PATH):
+        self.pem_path = pem_path
+        self.signing_key = self._load_or_create_key()
+        self.verifying_key = self.signing_key.verifying_key
+        
+        # did:ethr:<ethereum-style-address>
+        # Derived from sha256 hash of the uncompressed public key bytes
+        public_bytes = self.verifying_key.to_string("uncompressed")
+        address_hash = hashlib.sha256(public_bytes).hexdigest()
+        self.address = "0x" + address_hash[-40:]
+        self.did = f"did:ethr:{self.address}"
 
-    def _load_or_create_key(self) -> bytes:
-        self.key_path.parent.mkdir(parents=True, exist_ok=True)
-        if self.key_path.exists():
-            with open(self.key_path, "rb") as f:
-                return f.read()
+    def _load_or_create_key(self) -> SigningKey:
+        self.pem_path.parent.mkdir(parents=True, exist_ok=True)
+        if self.pem_path.exists():
+            with open(self.pem_path, "r", encoding="utf-8") as f:
+                return SigningKey.from_pem(f.read())
         else:
-            # Generate a new 32-byte key (256-bit entropy)
-            key = os.urandom(32)
-            with open(self.key_path, "wb") as f:
-                f.write(key)
-            return key
+            # Generate a new secp256k1 key (EVM compatible)
+            sk = SigningKey.generate(curve=SECP256k1)
+            with open(self.pem_path, "w", encoding="utf-8") as f:
+                f.write(sk.to_pem().decode("utf-8"))
+            return sk
 
     def sign_payload(self, payload: Dict[str, Any]) -> str:
-        """Signs a payload dictionary using HMAC-SHA256, representing a DID key signature."""
+        """Signs a payload dictionary using ECDSA secp256k1, producing a standard hex signature."""
         serialized = json.dumps(payload, sort_keys=True).encode("utf-8")
-        signature = hmac.new(self.secret_key, serialized, hashlib.sha256).hexdigest()
-        return f"daco_sig:{signature[:32]}"
+        signature_bytes = self.signing_key.sign(serialized)
+        return signature_bytes.hex()
 
-    def verify_payload(self, payload: Dict[str, Any], signature: str) -> bool:
-        """Verifies if the signature matches the signed payload."""
-        if not signature.startswith("daco_sig:"):
+    def verify_payload(self, payload: Dict[str, Any], signature_hex: str) -> bool:
+        """Verifies if the ECDSA signature matches the signed payload."""
+        try:
+            serialized = json.dumps(payload, sort_keys=True).encode("utf-8")
+            sig_bytes = bytes.fromhex(signature_hex)
+            return self.verifying_key.verify(sig_bytes, serialized)
+        except (BadSignatureError, ValueError, TypeError):
             return False
-        expected = self.sign_payload(payload)
-        return hmac.compare_digest(expected, signature)
 
 
 class BlockchainAnchor:

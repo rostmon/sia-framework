@@ -430,6 +430,18 @@ async def get_blockchain_blocks():
                         pass
     return JSONResponse(content=blocks[::-1])
 
+from typing import Dict, Any
+
+class VerifyRequest(BaseModel):
+    payload: Dict[str, Any]
+    signature: str
+
+@app.post("/blockchain/verify")
+async def verify_signature(req: VerifyRequest):
+    """Verifies a signed compliance attestation payload off-chain."""
+    is_valid = keyring.verify_payload(req.payload, req.signature)
+    return JSONResponse(content={"valid": is_valid, "daco_did": keyring.did, "address": keyring.address})
+
 # In-memory review queue for demo purposes
 # In production, this would be backed by a database
 review_queue = []
