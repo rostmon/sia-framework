@@ -8,7 +8,7 @@ version = "0.2.0"
 authors = [
   { name="Sovereign AI Team", email="compliance@sia.framework" },
 ]
-description = "Sovereign Systemic Integrity Architecture (SIA) — EU AI Act Governance-as-Code"
+description = "SIA: Decentralized AI Compliance Officer (DACO) for EU AI Act, GDPR & HIPAA"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [

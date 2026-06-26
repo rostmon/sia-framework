@@ -350,8 +350,8 @@
   <div class="logo">
     <div class="logo-icon">⚖</div>
     <div>
-      <div class="logo-text">SIA Framework</div>
-      <div class="logo-sub">EU AI Act, GDPR & HIPAA Compliance Mesh</div>
+      <div class="logo-text">SIA — DACO</div>
+      <div class="logo-sub" id="daco-did-display">Decentralized AI Compliance Officer</div>
     </div>
   </div>
   <div class="header-right">
@@ -544,6 +544,29 @@
     </div>
   </div>
 
+  <!-- Group 4: DACO Decentralized Audit State -->
+  <div class="group-header">
+    <span class="group-icon">🔗</span>
+    <div>
+      <div class="group-title">Decentralized AI Compliance Officer (DACO) State</div>
+      <div class="group-subtitle">Cryptographic auditing anchored to virtual L2 blockchain ledger</div>
+    </div>
+  </div>
+  <div class="kpi-grid group-margin">
+    <div class="kpi-card purple">
+      <div class="kpi-icon">🔑</div>
+      <div class="kpi-label">Officer DID</div>
+      <div class="kpi-value" id="kpi-daco-did" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; word-break: break-all; margin-top: 10px;">Awaiting DID...</div>
+      <div class="kpi-sub">Self-Sovereign Identity</div>
+    </div>
+    <div class="kpi-card cyan">
+      <div class="kpi-icon">🧱</div>
+      <div class="kpi-label">Anchored Block Height</div>
+      <div class="kpi-value" id="kpi-block-height">0</div>
+      <div class="kpi-sub">Blocks Anchored every 5 audit entries</div>
+    </div>
+  </div>
+
 
 
   <!-- Logs Row -->
@@ -566,6 +589,17 @@
       <div class="chart-sub">Last 10 events — SHA-256 anchored</div>
       <div id="audit-log-wrap">
         <div class="empty-state"><div class="icon">📡</div>Awaiting events...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anchored Blocks Row -->
+  <div class="bottom-row" style="margin-top: 24px; margin-bottom: 24px;">
+    <div class="chart-card" style="grid-column: span 2; border-color: rgba(34,211,238,0.3);">
+      <div class="chart-title" style="color: var(--accent2);">L2 Blockchain Anchored Blocks</div>
+      <div class="chart-sub">Tamper-evident Merkle roots of compliance audit trail slices.</div>
+      <div id="blocks-wrap" style="max-height: 240px; overflow-y: auto; margin-top: 12px;">
+        <div class="empty-state"><div class="icon">🧱</div>No blocks anchored yet. Complete 5 inferences to produce block 1.</div>
       </div>
     </div>
   </div>
@@ -662,9 +696,53 @@
     // Incidents
     fetchIncidents();
 
+    // DACO updates
+    if (data.daco_did) {
+      document.getElementById("daco-did-display").textContent = "Compliance Officer DID: " + data.daco_did;
+      document.getElementById("kpi-daco-did").textContent = data.daco_did;
+    }
+    if (data.daco_block_height !== undefined) {
+      document.getElementById("kpi-block-height").textContent = data.daco_block_height;
+    }
+    fetchBlocks();
+
     // Last updated
     const now = new Date();
     document.getElementById("last-updated").textContent = "Connected • " + now.toLocaleTimeString();
+  }
+
+  async function fetchBlocks() {
+    try {
+      const response = await fetch("http://127.0.0.1:8001/blockchain/blocks");
+      const data = await response.json();
+      renderBlocks(data);
+    } catch (err) {
+      console.error("Error fetching blocks:", err);
+    }
+  }
+
+  function renderBlocks(blocks) {
+    const wrap = document.getElementById("blocks-wrap");
+    if (!blocks || !blocks.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="icon">🧱</div>No blocks anchored yet. Complete 5 inferences to produce block 1.</div>`;
+      return;
+    }
+    let html = `<div class="audit-log">`;
+    for (const b of blocks) {
+      const ts = b.timestamp.replace("T", " ").replace("Z", " UTC");
+      html += `<div class="log-entry" style="border-color: rgba(34,211,238,0.3);">
+        <div class="action-badge PASSED" style="color:var(--accent2); border-color:var(--accent2)">BLOCK #${b.block_height}</div>
+        <div>
+          <div style="font-size:12px; font-weight:600; color: var(--text);">Merkle Root: <code style="color: var(--accent2);">${b.merkle_root.slice(0,32)}...</code></div>
+          <div class="log-prompt" style="margin-top:4px; font-family:'JetBrains Mono', monospace;">Prev Root: ${b.previous_root.slice(0,16)}... • Block Hash: ${b.block_hash.slice(0,16)}... • Transactions: ${b.tx_count}</div>
+        </div>
+        <div class="log-meta">
+          <div class="log-ts">${ts}</div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+    wrap.innerHTML = html;
   }
 
 

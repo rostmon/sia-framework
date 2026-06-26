@@ -1,6 +1,6 @@
 # Part 03 — EU AI Act (Annex IV) Conformance
 
-**Generated:** 2026-06-15 06:43 UTC  
+**Generated:** 2026-06-26 08:45 UTC  
 **[← Back to Index](00_index.md)**
 
 ## Article Coverage Matrix

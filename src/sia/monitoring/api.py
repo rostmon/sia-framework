@@ -28,11 +28,12 @@ from pydantic import BaseModel
 import uvicorn
 
 from sia.monitoring.metrics_collector import MetricsCollector
+from sia.traceability.daco import DACOKeyRing, BlockchainAnchor
 
 app = FastAPI(
-    title="SIA Governance Monitoring API",
-    description="Real-time EU AI Act compliance monitoring for the SIA Framework",
-    version="1.1.0",
+    title="SIA — Decentralized AI Compliance Officer (DACO) API",
+    description="Real-time Web 4.0 compliant AI safety and regulatory audit monitoring",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -44,6 +45,8 @@ app.add_middleware(
 
 _DASHBOARD_DIR = _ROOT_DIR / "dashboard"
 collector = MetricsCollector(ledger_path=str(_ROOT_DIR / "logs" / "audit_ledger.jsonl"))
+keyring = DACOKeyRing()
+anchor = BlockchainAnchor()
 
 @app.get("/")
 async def get_dashboard():
@@ -386,13 +389,19 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         # Initial push
-        await websocket.send_text(json.dumps(collector.compute()))
+        metrics = collector.compute()
+        metrics["daco_did"] = keyring.did
+        metrics["daco_block_height"] = anchor.get_latest_block()["block_height"]
+        await websocket.send_text(json.dumps(metrics))
         
         while True:
             # Keep connection alive and push updates every 2 seconds
             # In a real system, this would be triggered by file-system events (watchdog)
             await asyncio.sleep(2)
-            await websocket.send_text(json.dumps(collector.compute()))
+            metrics = collector.compute()
+            metrics["daco_did"] = keyring.did
+            metrics["daco_block_height"] = anchor.get_latest_block()["block_height"]
+            await websocket.send_text(json.dumps(metrics))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -402,7 +411,24 @@ async def health():
 
 @app.get("/metrics")
 async def get_metrics():
-    return JSONResponse(content=collector.compute())
+    res = collector.compute()
+    res["daco_did"] = keyring.did
+    res["daco_block_height"] = anchor.get_latest_block()["block_height"]
+    return JSONResponse(content=res)
+
+@app.get("/blockchain/blocks")
+async def get_blockchain_blocks():
+    """Returns the list of anchored blockchain blocks."""
+    blocks = []
+    if anchor.db_path.exists():
+        with open(anchor.db_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        blocks.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+    return JSONResponse(content=blocks[::-1])
 
 # In-memory review queue for demo purposes
 # In production, this would be backed by a database

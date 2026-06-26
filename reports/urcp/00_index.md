@@ -1,7 +1,8 @@
-# SIA Framework — Unified Regulatory Compliance Package (URCP)
+# SIA — Decentralized AI Compliance Officer (DACO) Compliance Package
 
-**Generated:** 2026-06-15 06:43 UTC
-**System:** Sovereign Systemic Integrity Architecture (SIA) v0.2.0
+**Generated:** 2026-06-26 08:45 UTC
+**Officer DID:** `did:daco:577068d887b735c60de6826c`
+**System:** SIA — Decentralized AI Compliance Officer (DACO) v2.0.0
 **Standard Alignment:** ISO 14971 · EU AI Act · GDPR · UK GDPR · HIPAA · ISO/IEC 42001 · AAMI TIR34971
 
 ---

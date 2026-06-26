@@ -1,29 +1,29 @@
 # Part 01 — Overview & Methodology
 
-**Generated:** 2026-06-15 06:43 UTC  
+**Generated:** 2026-06-26 08:45 UTC  
 **[← Back to Index](00_index.md)**
 
 ---
 
-## 1. Introduction to the SIA Framework
-The **Sovereign Systemic Integrity Architecture (SIA)** is a production-grade **Governance-as-Code (GaC)** middleware designed to decouple AI system compliance from probabilistic model behavior. Traditional AI safety approaches rely on soft prompt engineering or model alignment (fine-tuning), both of which are non-deterministic and susceptible to instruction override (jailbreaking) or structural failures. 
+## 1. Introduction to the Decentralized AI Compliance Officer (DACO)
+The **Decentralized AI Compliance Officer (DACO)** (formerly SIA Framework) is a production-grade **Governance-as-Code (GaC)** middleware designed to decouple AI system compliance from probabilistic model behavior. Traditional AI safety approaches rely on soft prompt engineering or model alignment (fine-tuning), both of which are non-deterministic and susceptible to instruction override (jailbreaking) or structural failures. 
 
-SIA installs a **deterministic cognitive firewall and supervisory mesh** around any AI model wrapper. Every ingress payload and egress inference is validated at runtime against binary legal, safety, and operational gates. Detailed mapping of each active safety control to international standards can be found in the [Part 08 — Cross-Reference Traceability Index](08_cross_reference_index.md).
+DACO installs a **deterministic cognitive firewall and supervisory mesh** around any AI model wrapper. Every ingress payload and egress inference is validated at runtime against binary legal, safety, and operational gates. Detailed mapping of each active safety control to international standards can be found in the [Part 08 — Cross-Reference Traceability Index](08_cross_reference_index.md).
 
 ---
 
 ## 2. Risk Management Methodology & Standard Alignment
-SIA bridges clinical/medical safety requirements with enterprise AI management structures through a dual alignment methodology:
+DACO bridges clinical/medical safety requirements with enterprise AI management structures through a dual alignment methodology:
 
 ### A. ISO 14971 Integration (Hazard Analysis & RPN Reduction)
-Following **ISO 14971** risk management principles, SIA treats compliance breaches and safety failures as system hazards:
+Following **ISO 14971** risk management principles, DACO treats compliance breaches and safety failures as system hazards:
 1. **Risk Estimation & Pre-mitigation Evaluation**: Every potential failure mode (e.g., PII exposure, OOD clinical recommendations) is cataloged in the [Part 02 — ISO 14971 Risk Management Report](02_iso14971.md) with a Pre-mitigation Risk Priority Number (RPN) based on severity and probability.
 2. **Deterministic Control Mapping**: Every hazard is tied to a specific, executable control (e.g., `PSEUDONYMIZE_VAULT`, `BLOCK_OOD_PAYLOAD`).
 3. **Residual Risk Optimization**: Run-time constraints and validation filters successfully reduce all risk profiles to an **Acceptable level (Residual RPN ≤ 8)**.
 4. **Post-Market Surveillance (Article 72)**: Real-time incident logs are mapped back to hazard codes, enabling live feedback loops for clinical monitoring. For details on runtime anomalies, see the incident logs in [Part 02 — ISO 14971 Risk Management Report](02_iso14971.md) and [Part 03 — EU AI Act Conformance](03_eu_ai_act_annex_iv.md).
 
 ### B. ISO/IEC 42001 Integration (AI Management System)
-SIA incorporates key requirements of the **ISO/IEC 42001:2023** standard for AI Management Systems (AIMS):
+DACO incorporates key requirements of the **ISO/IEC 42001:2023** standard for AI Management Systems (AIMS):
 1. **Ethical Constraints & Interested Parties (Clause 4.2)**: Codified location routing and domain restrictions. For conformance details, see [Part 04 — ISO/IEC 42001 AI Management System Conformance](04_iso42001.md).
 2. **AI System Lifecycle Governance (Clause 8.4)**: End-to-end telemetry auditing and logging of system state changes.
 3. **Data Governance & Dataset Quality (Clause Annex B.7)**: Dynamic validation of training demographic match (`VALIDATE_PROFILE_MATCH`) and real-time sanitizers.
@@ -32,8 +32,8 @@ SIA incorporates key requirements of the **ISO/IEC 42001:2023** standard for AI 
 
 ---
 
-## 3. Sovereign Stack Execution Pipeline
-The SIA pipeline operates across three main execution layers:
+## 3. DACO Stack Execution Pipeline
+The DACO pipeline operates across three main execution layers:
 - **Layer 1: Contextual Ingress Orchestrator**: Scans and sanitizes raw prompt text, detects prompt injections, checks for patient demographics mismatch, and validates demographic training match centroids. PII and PHI identification triggers are fully mapped in [Part 05 — GDPR Data Protection Impact Assessment (DPIA)](05_gdpr_dpia.md) and [Part 07 — HIPAA Technical Safeguards Evidence](07_hipaa_ocr_evidence.md).
 - **Layer 2: Core Governance Engine**: Determines jurisdiction policy retention locks (Regulatory Router) and reviews high-risk action flags. Policies dynamically handle differences between European regulations and post-Brexit deltas (see [Part 06 — UK GDPR Assessment](06_uk_gdpr_assessment.md)).
 - **Layer 3: Deterministic Egress Validator**: Verifies hallucination score thresholds, appends transparency watermarks, and attaches clinical validation checklists.
